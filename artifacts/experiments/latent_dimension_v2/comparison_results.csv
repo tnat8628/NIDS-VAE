@@ -1,0 +1,4 @@
+latent_dim,n_params,best_epoch,final_epoch,best_val_loss,threshold,accuracy,precision,recall,f1_score,roc_auc,fpr,elapsed_s,stopped_early
+8,35282,38,48,0.739679,5.9734,0.8913,0.864,0.5748,0.6903,0.7847,0.0242,457.1,True
+16,36834,58,68,0.740856,6.0313,0.892,0.8654,0.5778,0.6929,0.7835,0.024,886.7,True
+32,39938,32,42,0.739344,5.8036,0.8903,0.8563,0.5766,0.6891,0.7799,0.0259,600.0,True

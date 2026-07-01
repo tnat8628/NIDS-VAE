@@ -1,0 +1,5 @@
+Config,Epoch Count,Best Epoch (Stored),Best Epoch (Recomputed),Final Epoch,Status
+"A [64, 32]",11,1,1,11,BUG (early stop trong warmup)
+"B [128, 64]",11,1,1,11,BUG (early stop trong warmup)
+"C [256, 128]",11,1,1,11,BUG (early stop trong warmup)
+"D [128, 32]",11,1,1,11,BUG (early stop trong warmup)

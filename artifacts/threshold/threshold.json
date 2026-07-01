@@ -1,0 +1,22 @@
+{
+  "threshold": 6.0312628746032715,
+  "percentile": 99.0,
+  "selection_method": "fixed_percentile",
+  "max_fpr": 0.07,
+  "score_mode": "recon",
+  "alpha": 0.05,
+  "validation_error_stats": {
+    "min": 0.009852877818048,
+    "max": 631.3643798828125,
+    "mean": 0.6354213953018188,
+    "median": 0.25866270065307617,
+    "std": 2.433183193206787,
+    "p90": 1.3341871500015259,
+    "p95": 2.8716506958007812,
+    "p97_5": 3.968383312225342,
+    "p99": 6.0312628746032715
+  },
+  "model_checkpoint": "D:\\nids-vae-project\\artifacts\\models\\vae_best.pth",
+  "run_id": "8ba5cdce-2245-4357-8799-6951504008a9",
+  "created_at": "2026-06-26T04:08:27.529369+00:00"
+}

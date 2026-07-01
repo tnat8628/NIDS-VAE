@@ -1,0 +1,90 @@
+{
+  "experiment": "hidden_dims_comparison_v2",
+  "saved_at": "2026-05-31T13:25:16.505194+00:00",
+  "fix_applied": "warmup-aware early stopping (train_config_v2)",
+  "beta_warmup": 30,
+  "patience": 10,
+  "configs": [
+    {
+      "config_name": "A",
+      "hidden_dims": [
+        64,
+        32
+      ],
+      "n_params": 14370,
+      "best_epoch": 53,
+      "best_val_loss": 0.746908472041891,
+      "accuracy": 0.8899818031021378,
+      "precision": 0.8564144379973823,
+      "recall": 0.5746176134949446,
+      "f1": 0.6877705080210897,
+      "roc_auc": 0.7818601780487326,
+      "fpr": 0.025744542406743565,
+      "train_time_sec": 635.4355623722076
+    },
+    {
+      "config_name": "B",
+      "hidden_dims": [
+        128,
+        64
+      ],
+      "n_params": 36834,
+      "best_epoch": 58,
+      "best_val_loss": 0.7408559779928188,
+      "accuracy": 0.8920183702016513,
+      "precision": 0.865397803403564,
+      "recall": 0.5778063201198466,
+      "f1": 0.692947466091827,
+      "roc_auc": 0.7835496556116806,
+      "fpr": 0.02401585746851503,
+      "train_time_sec": 738.2180716991425
+    },
+    {
+      "config_name": "C",
+      "hidden_dims": [
+        256,
+        128
+      ],
+      "n_params": 106338,
+      "best_epoch": 43,
+      "best_val_loss": 0.7402818365530535,
+      "accuracy": 0.89171731676219,
+      "precision": 0.8632428584952963,
+      "recall": 0.5780904390459239,
+      "f1": 0.6924594664150296,
+      "roc_auc": 0.7837821138910459,
+      "fpr": 0.02447328444491017,
+      "train_time_sec": 1127.1914563179016
+    },
+    {
+      "config_name": "D",
+      "hidden_dims": [
+        128,
+        32
+      ],
+      "n_params": 27042,
+      "best_epoch": 41,
+      "best_val_loss": 0.7446857763059211,
+      "accuracy": 0.8902848371563324,
+      "precision": 0.8587483318114771,
+      "recall": 0.574155039706207,
+      "f1": 0.6881897165565747,
+      "roc_auc": 0.7825848559434577,
+      "fpr": 0.025236917682595877,
+      "train_time_sec": 463.3877172470093
+    }
+  ],
+  "composite_scores": {
+    "A": 3.75,
+    "B": 1.5,
+    "C": 1.5,
+    "D": 3.25
+  },
+  "best_balanced_config": "B",
+  "selected_config": "B",
+  "selected_hidden_dims": [
+    128,
+    64
+  ],
+  "valid_experiment": true
+}

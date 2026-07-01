@@ -1,0 +1,109 @@
+{
+  "experiment_name": "hidden_dims_comparison",
+  "created_at": "2026-05-31T08:16:29.262652+00:00",
+  "setup": {
+    "input_dim": 66,
+    "latent_dim": 16,
+    "learning_rate": 0.001,
+    "batch_size": 1024,
+    "max_epochs": 100,
+    "patience": 10,
+    "seed": 42,
+    "threshold_percentile": 99.0,
+    "quick_experiment": false
+  },
+  "results": [
+    {
+      "config": "A",
+      "hidden_dims": [
+        64,
+        32
+      ],
+      "n_params": 14370,
+      "best_epoch": 1,
+      "best_val_loss": 0.46179058365147524,
+      "threshold": 2.962113380432129,
+      "accuracy": 0.8852273374348564,
+      "precision": 0.8495332017461712,
+      "recall": 0.5538229258144352,
+      "f1": 0.6705225482364245,
+      "roc_auc": 0.8581398108027312,
+      "fpr": 0.02621263640453612,
+      "train_time_sec": 102.64775395393372,
+      "composite_rank": 2.5,
+      "tp": 235861,
+      "tn": 1551922,
+      "fp": 41775,
+      "fn": 190017
+    },
+    {
+      "config": "B",
+      "hidden_dims": [
+        128,
+        64
+      ],
+      "n_params": 36834,
+      "best_epoch": 1,
+      "best_val_loss": 0.37864385996804095,
+      "threshold": 1.8236619234085083,
+      "accuracy": 0.8811660869242292,
+      "precision": 0.8455144314413597,
+      "recall": 0.5340496574136255,
+      "f1": 0.6546222768444351,
+      "roc_auc": 0.8687004637230495,
+      "fpr": 0.026075220070063507,
+      "train_time_sec": 116.20808124542236,
+      "composite_rank": 2.75,
+      "tp": 227440,
+      "tn": 1552141,
+      "fp": 41556,
+      "fn": 198438
+    },
+    {
+      "config": "C",
+      "hidden_dims": [
+        256,
+        128
+      ],
+      "n_params": 106338,
+      "best_epoch": 1,
+      "best_val_loss": 0.31546737343975995,
+      "threshold": 1.2174339294433594,
+      "accuracy": 0.8812319423641113,
+      "precision": 0.8230123532251399,
+      "recall": 0.5564480907677786,
+      "f1": 0.6639750412919802,
+      "roc_auc": 0.8996790581663595,
+      "fpr": 0.031977220262069894,
+      "train_time_sec": 154.71791672706604,
+      "composite_rank": 2.0,
+      "tp": 236979,
+      "tn": 1542735,
+      "fp": 50962,
+      "fn": 188899
+    },
+    {
+      "config": "D",
+      "hidden_dims": [
+        128,
+        32
+      ],
+      "n_params": 27042,
+      "best_epoch": 1,
+      "best_val_loss": 0.39994197692533934,
+      "threshold": 2.2205612659454346,
+      "accuracy": 0.8782813215651808,
+      "precision": 0.8451291133805624,
+      "recall": 0.5176529428615707,
+      "f1": 0.6420448091983213,
+      "roc_auc": 0.8688101146839244,
+      "fpr": 0.025349235143192213,
+      "train_time_sec": 105.12495017051697,
+      "composite_rank": 2.75,
+      "tp": 220457,
+      "tn": 1553298,
+      "fp": 40399,
+      "fn": 205421
+    }
+  ]
+}

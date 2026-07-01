@@ -1,0 +1,11 @@
+{
+  "run_id": "8ba5cdce-2245-4357-8799-6951504008a9",
+  "model_checkpoint_path": "D:\\nids-vae-project\\artifacts\\models\\vae_best.pth",
+  "model_config_hash": "7f6243d4055c3737bd8734c05a5931035294557e461f302c4ceed8d46a117eb8",
+  "validation_errors_hash": "3c810876bf981606438403689c0ba117c680295b20c70d5a08be318ed4c8e3c5",
+  "threshold": 6.0312628746032715,
+  "percentile": 99.0,
+  "score_mode": "recon",
+  "alpha": 0.05,
+  "created_at": "2026-06-26T04:08:27.529369+00:00"
+}

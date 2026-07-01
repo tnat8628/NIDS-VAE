@@ -1,0 +1,25 @@
+
+NHẬN XÉT — Baseline Comparison
+============================================================
+
+Bộ dữ liệu CICIDS2017 có tỷ lệ BENIGN chiếm 78.9%, 
+đặt ra câu hỏi: liệu model có chỉ đơn thuần dự đoán tất cả là bình thường?
+
+Thực nghiệm cho thấy:
+
+• Classifier "Always NORMAL" đạt Accuracy 78.91% nhưng 
+  Recall = 0.00% — tức là bỏ sót TOÀN BỘ 425,878 cuộc tấn công.
+  F1-score = 0.00% — vô dụng cho bài toán phát hiện xâm nhập.
+
+• Classifier "Always ANOMALY" đạt Recall = 100% nhưng 
+  Precision = 21.09% và Accuracy = 21.09%.
+  Phát ra cảnh báo giả cho 1,593,697 flow bình thường — 
+  gây alert fatigue nghiêm trọng.
+
+• Mô hình VAE đề xuất đạt Accuracy 89.20% và F1-score 69.29%,
+  vượt trội cả hai baseline trên thang đo thực tiễn.
+  Đặc biệt, FPR = 2.40% — chỉ báo nhầm 38,274 / 1,593,697 flow bình thường.
+
+→ Kết luận: Hiệu năng của VAE KHÔNG đến từ thiên kiến dữ liệu mà đến
+  từ khả năng phát hiện bất thường thực sự thông qua reconstruction error.
+============================================================

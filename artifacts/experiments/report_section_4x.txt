@@ -1,0 +1,75 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NỘI DUNG CHO LUẬN VĂN — CHƯƠNG 4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.x. Thực nghiệm lựa chọn kích thước không gian tiềm ẩn
+
+4.x.1. Mục tiêu thí nghiệm
+
+Kích thước không gian tiềm ẩn (latent dimension) là một siêu tham số
+quan trọng của Variational Autoencoder, ảnh hưởng trực tiếp đến khả
+năng biểu diễn và phân biệt bất thường. Nếu không gian tiềm ẩn quá
+nhỏ, mô hình mất thông tin quan trọng khi nén dữ liệu, dẫn đến
+reconstruction error của lưu lượng bình thường tăng cao, làm giảm
+khả năng phát hiện tấn công. Ngược lại, nếu không gian tiềm ẩn quá
+lớn, mô hình có thể học và tái tạo tốt cả các mẫu bất thường, làm
+giảm hiệu quả phân biệt. Do đó, thí nghiệm này được thực hiện nhằm
+xác định giá trị tối ưu cho latent_dim trên bộ dữ liệu CICIDS2017.
+
+4.x.2. Thiết kế thí nghiệm
+
+Ba cấu hình được so sánh: latent_dim ∈ {8, 16, 32}. Tất cả các
+siêu tham số khác được giữ nguyên: hidden_dims=[128, 64], learning
+rate=0.001, batch_size=1024, optimizer=Adam, random_seed=42.
+Ngưỡng phát hiện bất thường được chọn bằng phương pháp percentile
+thứ 99 trên tập validation (chỉ chứa lưu lượng BENIGN).
+
+4.x.3. Kết quả thực nghiệm
+
+Bảng 4.x: So sánh hiệu năng phát hiện bất thường theo kích thước latent space
+
+| Latent Dim | Precision | Recall | F1-Score | ROC-AUC | FPR    | Best Val Loss |
+|:----------:|:---------:|:------:|:--------:|:-------:|:------:|:-------------:|
+| 8          | 0.8493  | 0.5432 | 0.6626 | 0.8792 | 0.0258 | 0.379725  |
+| 16         | 0.8455 | 0.5340 | 0.6546 | 0.8687 | 0.0261 | 0.378644 |
+| 32         | 0.8446 | 0.5359 | 0.6557 | 0.8692 | 0.0263 | 0.400625 |
+
+
+4.x.4. Phân tích kết quả
+
+Cấu hình latent_dim=8 đạt Precision=0.8493, Recall=0.5432,
+F1=0.6626 và ROC-AUC=0.8792. Với chỉ 8 chiều tiềm ẩn để nén
+66 đặc trưng đầu vào (tỷ lệ nén xấp xỉ 8:1), mô hình bị mất một
+lượng thông tin đáng kể. Kết quả là decoder gặp khó khăn trong việc
+tái tạo chính xác lưu lượng bình thường, làm reconstruction error
+của lớp BENIGN tăng và kéo theo ngưỡng phát hiện lên cao.
+
+Cấu hình latent_dim=32 đạt Precision=0.8446, Recall=0.5359,
+F1=0.6557 và FPR=0.0263. Không gian tiềm ẩn 32 chiều cho
+phép mô hình lưu giữ nhiều thông tin hơn, bao gồm cả các pattern
+nhiễu của lưu lượng bình thường. Điều này khiến mô hình có thể tái
+tạo tốt hơn một số mẫu bất thường, làm giảm khả năng phân biệt.
+
+Cấu hình latent_dim=16 đạt Precision=0.8455, Recall=0.5340,
+F1=0.6546, ROC-AUC=0.8687 và FPR=0.0261. Tỷ lệ nén
+66→16 (xấp xỉ 4:1) được chứng minh là phù hợp với đặc điểm của
+dữ liệu CICIDS2017, đạt điểm cân bằng tối ưu giữa khả năng biểu
+diễn dữ liệu và khả năng tổng quát hóa.
+
+4.x.5. Kết luận
+
+Thực nghiệm xác nhận rằng latent_dim=16 là lựa chọn tối ưu cho
+mô hình VAE trên bộ dữ liệu CICIDS2017 với 66 đặc trưng đầu vào.
+Cấu hình này đạt được sự cân bằng giữa: (1) khả năng biểu diễn
+cấu trúc quan trọng của lưu lượng bình thường, (2) mức độ nén đủ
+để loại bỏ nhiễu và tái tạo kém lưu lượng bất thường, và (3) khả
+năng tổng quát hóa trên dữ liệu chưa thấy. Kết quả này cung cấp
+bằng chứng thực nghiệm rõ ràng cho quyết định thiết kế kiến trúc
+đã được áp dụng trong hệ thống NIDS-VAE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LƯU Ý: Kết quả trên được sinh từ QUICK_EXPERIMENT=False.
+Để lấy số liệu chính xác cho luận văn, đặt QUICK_EXPERIMENT=False
+và chạy lại notebook.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,0 +1,51 @@
+======================================================================
+4.x. THỰC NGHIỆM LỰA CHỌN KIẾN TRÚC ENCODER/DECODER
+======================================================================
+
+MỤC TIÊU
+---------
+Thực nghiệm so sánh 4 kiến trúc Encoder/Decoder khác nhau để
+xác định cấu hình tối ưu cho VAE trong hệ thống NIDS.
+
+CÁC KIẾN TRÚC THỬ NGHIỆM
+-------------------------
+Config A [64, 32] (14,370 params), Config B [128, 64] (36,834 params), Config C [256, 128] (106,338 params), Config D [128, 32] (27,042 params)
+
+PHƯƠNG PHÁP
+------------
+  • Dataset  : CICIDS2017, input_dim=66
+  • Latent   : latent_dim=16
+  • KL warmup: BETA_WARMUP_EPOCHS=30 epoch (beta: 0 → 1)
+  • Early stop: PATIENCE=10 epoch, chỉ kích hoạt SAU warmup (epoch 30+1)
+  • Threshold: p99 reconstruction error trên BENIGN validation set
+  • Mỗi cấu hình được huấn luyện lại từ đầu với random seed cố định
+
+KẾT QUẢ
+--------
+  Config với F1 cao nhất   : Config B [128, 64] (F1=0.6929)
+  Config với ROC-AUC cao nhất: Config C [256, 128] (ROC-AUC=0.7838)
+  Config với FPR thấp nhất  : Config B [128, 64] (FPR=0.0240)
+  Config cân bằng nhất (composite rank): Config B
+
+  Config B đã triển khai [128, 64]:
+    F1=0.6929  Recall=0.5778  ROC-AUC=0.7835  FPR=0.0240
+    Best Epoch=58  Train Time=738s  #Params=36,834
+
+NHẬN XÉT
+---------
+  Sau khi áp dụng warmup-aware early stopping, best_epoch > 30
+  cho tất cả cấu hình, xác nhận mô hình đã vượt qua giai đoạn KL annealing
+  trước khi dừng sớm. Điều này đảm bảo checkpoint được lưu không bị ảnh
+  hưởng bởi giai đoạn KL warmup không ổn định.
+
+  Config B [128, 64] là lựa chọn cân bằng giữa hiệu năng phát hiện xâm
+  nhập và chi phí tính toán: đủ phức tạp để học biểu diễn latent, đủ nhỏ
+  để triển khai thực tế trên thiết bị giới hạn tài nguyên.
+
+KẾT LUẬN
+---------
+  Cấu hình được chọn: Config B — hidden_dims=[128, 64], latent_dim=16.
+  Kết quả thực nghiệm xác nhận đây là kiến trúc tối ưu cho bài toán
+  phát hiện bất thường mạng (anomaly detection) trên CICIDS2017.
+  Kết quả đã được lưu tại artifacts/experiments/hidden_dims_v2/.
+======================================================================

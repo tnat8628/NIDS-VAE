@@ -1,0 +1,12 @@
+{
+  "architecture": "VAE",
+  "input_dim": 66,
+  "latent_dim": 8,
+  "hidden_dims": [
+    128,
+    64
+  ],
+  "beta": 1.0,
+  "activation": "ReLU",
+  "output_activation": "Linear"
+}

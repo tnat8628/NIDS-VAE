@@ -1,0 +1,6 @@
+Nguyên nhân,Tác động,Giải thích
+Attack giống BENIGN (feature overlap),FN tăng,"Một số attack (Infiltration, Web Attack, Heartbleed) có đặc trưng mạng tương tự traffic bình thường"
+Chỉ train trên BENIGN (unsupervised),Attack nhẹ được tái tạo tốt,VAE học phân phối BENIGN — không có ranh giới phân loại tường minh giữa BENIGN và ATTACK
+Threshold P99 nghiêm ngặt,"Recall giảm, Precision tăng",Chọn ngưỡng cao để kiểm soát FPR ≤ 2.4% → nhiều attack nhẹ có error < threshold bị bỏ sót
+Reconstruction-based detection,Khó phát hiện attack gần chuẩn,Chỉ dùng MSE reconstruction error làm score → mất thông tin phân biệt trong latent space
+Feature overlap BENIGN ↔ ATTACK,Error không đủ lớn,"66 features network flow có nhiều giá trị chồng lấn giữa class — đặc biệt với DoS Slowloris, FTP-Patator nhẹ"

@@ -1,0 +1,40 @@
+
+WHY RECALL IS ONLY 57.78%? — Phân tích học thuật
+==============================================================
+
+1. Bản chất của Anomaly Detection (Unsupervised)
+   Mô hình VAE chỉ được huấn luyện trên 402,229 flow BENIGN.
+   Hàm mục tiêu là tái tạo input (reconstruction) chứ không phải
+   phân loại trực tiếp. Do đó, với attack có đặc trưng gần BENIGN,
+   reconstruction error thấp và không vượt qua threshold.
+
+2. Phân tích định lượng
+   Tổng attack: 425,878 flows
+   Phát hiện được (TP):  246,075 flows  (57.78%)
+   Bị bỏ sót    (FN):  179,803 flows  (42.22%)
+
+   Recall = 246075 / (246075 + 179803) = 0.577806 = 57.78%
+
+3. Threshold trade-off (P90/P95/P99)
+   Nếu hạ threshold xuống P90: Recall tăng lên 60.99%
+   nhưng FPR tăng mạnh từ 2.40% lên 12.37%
+   — tức là báo nhầm thêm 158,860 flow bình thường.
+
+   Lựa chọn P99 là thiết kế có chủ đích: ưu tiên Precision cao
+   và FPR thấp để phù hợp với môi trường SOC thực tế
+   (giảm alert fatigue).
+
+4. Kết luận
+   Recall 57.78% phản ánh thách thức vốn có của anomaly detection
+   dựa trên reconstruction error. Do mô hình chỉ được huấn luyện
+   trên lưu lượng BENIGN, một số cuộc tấn công có đặc trưng gần
+   với hành vi bình thường vẫn có thể được tái tạo với sai số thấp.
+
+   Ngoài ra, việc lựa chọn threshold tại percentile 99 giúp
+   giảm cảnh báo giả (FPR = 2.40%) nhưng đồng thời làm tăng số
+   lượng false negatives, dẫn tới Recall thấp hơn.
+
+   Cải thiện: Semi-supervised learning (bổ sung nhãn ATTACK) hoặc
+   Adversarial Autoencoder có thể tăng Recall lên 70-80%
+   mà không tăng FPR đáng kể.
+==============================================================

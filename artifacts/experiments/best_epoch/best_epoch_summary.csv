@@ -1,0 +1,10 @@
+metric,value
+best_epoch,58.0
+best_val_loss,0.7408559779928188
+best_train_loss,0.7722503483750438
+final_epoch,68.0
+final_val_loss,0.7463376841159782
+final_train_loss,0.7655195869865612
+delta_val_loss_final_minus_best,0.005481706123159458
+generalization_gap_best,-0.031394370382225034
+generalization_gap_final,-0.019181902870582968

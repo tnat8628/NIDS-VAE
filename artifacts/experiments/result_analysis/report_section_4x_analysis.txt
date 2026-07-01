@@ -1,0 +1,103 @@
+---
+
+# 4.x. Phân Tích Kết Quả Thực Nghiệm NIDS-VAE
+
+## 4.x.1. Tổng Quan Kết Quả
+
+Mô hình NIDS-VAE được đánh giá trên tập kiểm tra bao gồm **2,019,575 luồng mạng**
+(network flow) từ tập dữ liệu CICIDS2017, trong đó có 1,593,697 luồng bình thường
+(BENIGN, chiếm 78.9%) và 425,878 luồng tấn công (ANOMALY, chiếm 21.1%).
+Ngưỡng phát hiện sử dụng là $\tau = 6.031263$ (Percentile 99 trên tập validation BENIGN).
+
+Bảng~4.x.1 trình bày tổng hợp các chỉ số đánh giá hiệu năng:
+
+| Chỉ số | Giá trị | Mô tả |
+|---|---|---|
+| Accuracy | 0.8920 (89.20%) | Tỷ lệ phân loại đúng tổng thể |
+| Precision | 0.8654 (86.54%) | Tỷ lệ đúng trong các cảnh báo phát ra |
+| Recall (TPR) | 0.5778 (57.78%) | Tỷ lệ attack được phát hiện |
+| F1-score | 0.6929 (69.29%) | Trung bình điều hòa Precision–Recall |
+| ROC-AUC | 0.7835 (78.35%) | Khả năng phân biệt NORMAL–ANOMALY |
+| FPR | 0.0240 (2.40%) | Tỷ lệ BENIGN bị báo nhầm |
+
+*Bảng 4.x.1. Tổng hợp chỉ số đánh giá (n = 2,019,575 flows, threshold = 6.031263)*
+
+## 4.x.2. Phân Tích Confusion Matrix
+
+Ma trận nhầm lẫn (confusion matrix) cung cấp thông tin chi tiết về từng loại kết quả phân loại:
+
+$$
+\text{Confusion Matrix} = \begin{pmatrix} TN=1,555,423 & FP=38,274 \\ FN=179,803 & TP=246,075 \end{pmatrix}
+$$
+
+- **True Positive (TP = 246,075)**: Luồng tấn công được phát hiện đúng, chiếm 57.8%
+  tổng số attack thực sự.
+- **True Negative (TN = 1,555,423)**: Luồng bình thường được nhận diện đúng, chiếm 97.60%
+  tổng số BENIGN flows.
+- **False Positive (FP = 38,274)**: Luồng bình thường bị báo nhầm là attack (tỷ lệ 2.40%).
+- **False Negative (FN = 179,803)**: Luồng attack không bị phát hiện (tỷ lệ 42.22%).
+
+## 4.x.3. Phân Tích Từng Chỉ Số
+
+**Accuracy (89.20%)**:
+Mặc dù Accuracy đạt 89.20%, chỉ số này không phản ánh đầy đủ hiệu năng
+do tính mất cân bằng của dataset (BENIGN chiếm 78.9%). Một mô hình
+"luôn dự đoán NORMAL" cũng đạt Accuracy = 78.91%, cho thấy Accuracy
+cần được diễn giải cùng với Precision và Recall.
+
+**Precision (86.54% — Mức độ cao)**:
+Precision đạt 86.54%, nghĩa là trong 284,349 cảnh báo được phát ra,
+có 246,075 (86.5%) là attack thực sự và chỉ 38,274 (13.5%)
+là báo nhầm. Điều này chủ yếu do ngưỡng Percentile 99 rất cao (6.0313):
+chỉ những luồng có reconstruction error vượt ngưỡng này mới bị đánh dấu là bất thường,
+loại bỏ phần lớn BENIGN flows khỏi danh sách cảnh báo.
+
+**Recall (57.78% — Mức độ thấp)**:
+Recall chỉ đạt 57.78%, đồng nghĩa với 179,803 luồng attack bị bỏ sót.
+Nguyên nhân chính là phương pháp VAE-based anomaly detection chỉ học phân phối
+lưu lượng bình thường: khi một luồng tấn công có đặc trưng thống kê gần với BENIGN
+(ví dụ: Web Attack, Infiltration, Heartbleed), VAE có thể tái tạo luồng đó với sai số
+thấp, dẫn đến reconstruction error không vượt ngưỡng phát hiện.
+
+**F1-score (69.29%)**:
+F1-score = 0.6929 phản ánh sự mất cân bằng giữa Precision (86.54%) và
+Recall (57.78%). Sự chênh lệch 28.76% giữa hai chỉ số này
+cho thấy F1 bị kéo xuống chủ yếu bởi Recall thấp. Cải thiện Recall (qua điều chỉnh
+threshold hoặc bổ sung semi-supervised training) sẽ cải thiện F1 đáng kể.
+
+**ROC-AUC (78.35%)**:
+ROC-AUC = 0.7835 phản ánh khả năng phân biệt tổng quát của mô hình giữa
+NORMAL và ANOMALY, không phụ thuộc vào ngưỡng cụ thể. Giá trị chưa đạt 90% cho
+thấy không gian tiềm ẩn 16 chiều (latent space 16D) của VAE chưa tách biệt hoàn
+toàn giữa biểu diễn của BENIGN và ATTACK traffic. Một số loại attack có feature
+vector nằm gần với phân phối BENIGN ngay cả trong không gian tiềm ẩn.
+
+## 4.x.4. Phân Tích False Positive và False Negative
+
+**False Positive (FP = 38,274, FPR = 2.40%)**:
+Tỷ lệ báo nhầm FPR = 2.40% là mức chấp nhận được trong môi trường NIDS.
+Các luồng bình thường bị báo nhầm chủ yếu là những luồng "ngoại lệ" — có đặc trưng
+thống kê khác biệt so với phân phối BENIGN chính mà VAE đã học, dù không phải attack.
+Đây là hạn chế cơ bản của unsupervised anomaly detection: không thể phân biệt
+"BENIGN hiếm gặp" và "attack thông thường" chỉ qua reconstruction error.
+
+**False Negative (FN = 179,803, FNR = 42.22%)**:
+179,803 luồng attack bị bỏ sót chủ yếu thuộc các loại tấn công có traffic pattern
+gần với BENIGN (Infiltration, Web Attack, Heartbleed). Decoder VAE tái tạo được
+các luồng này với sai số thấp vì chúng nằm gần phân phối học được trong quá trình
+huấn luyện. Đây là nguyên nhân chính làm giảm Recall xuống còn 57.78%.
+
+## 4.x.5. Nhận Xét Tổng Thể
+
+Mô hình NIDS-VAE với kiến trúc encoder-decoder ([128, 64] hidden dims,
+latent_dim=16) được huấn luyện trên 402,229 luồng BENIGN
+đạt hiệu năng tổng thể F1 = 69.29% và ROC-AUC = 78.35%.
+Ưu điểm nổi bật là Precision cao (86.54%) và FPR thấp (2.40%),
+cho thấy mô hình có khả năng phát hiện chính xác các attack rõ ràng và giảm thiểu
+cảnh báo nhầm. Hạn chế chính là Recall (57.78%) chưa cao, do đặc tính
+cơ bản của phương pháp unsupervised: không thể tối ưu đồng thời FP và FN mà không
+có thông tin về phân phối ATTACK trong quá trình huấn luyện.
+
+---
+*Hình minh họa: `artifacts/experiments/result_analysis/`*
+*Dữ liệu nguồn: `artifacts/threshold/evaluation_metrics.json`, `artifacts/threshold/confusion_matrix.json`*

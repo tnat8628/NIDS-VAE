@@ -1,0 +1,99 @@
+{
+  "experiment_name": "hidden_dims_comparison_v2_fixed",
+  "version": "v2_warmup_aware_early_stopping",
+  "created_at": "2026-05-31T11:53:05.810225+00:00",
+  "bug_fixed": "early stopping trong warmup — áp dụng warmup-aware logic từ scripts/train.py",
+  "setup": {
+    "input_dim": 66,
+    "latent_dim": 16,
+    "learning_rate": 0.001,
+    "batch_size": 1024,
+    "max_epochs": 100,
+    "patience": 10,
+    "beta_warmup_epochs": 30,
+    "seed": 42,
+    "threshold_percentile": 99.0
+  },
+  "results": [
+    {
+      "config": "A",
+      "hidden_dims": [
+        64,
+        32
+      ],
+      "n_params": 14370,
+      "best_epoch": 53,
+      "final_epoch": 63,
+      "best_val_loss": 0.746908472041891,
+      "threshold": 6.125032424926758,
+      "accuracy": 0.8899818031021378,
+      "precision": 0.8564144379973823,
+      "recall": 0.5746176134949446,
+      "f1": 0.6877705080210897,
+      "roc_auc": 0.7818601780487326,
+      "fpr": 0.025744542406743565,
+      "train_time_sec": 635.4355623722076,
+      "composite_rank": 3.75
+    },
+    {
+      "config": "B",
+      "hidden_dims": [
+        128,
+        64
+      ],
+      "n_params": 36834,
+      "best_epoch": 58,
+      "final_epoch": 68,
+      "best_val_loss": 0.7408559779928188,
+      "threshold": 6.0312628746032715,
+      "accuracy": 0.8920183702016513,
+      "precision": 0.865397803403564,
+      "recall": 0.5778063201198466,
+      "f1": 0.692947466091827,
+      "roc_auc": 0.7835496556116806,
+      "fpr": 0.02401585746851503,
+      "train_time_sec": 738.2180716991425,
+      "composite_rank": 1.5
+    },
+    {
+      "config": "C",
+      "hidden_dims": [
+        256,
+        128
+      ],
+      "n_params": 106338,
+      "best_epoch": 43,
+      "final_epoch": 53,
+      "best_val_loss": 0.7402818365530535,
+      "threshold": 6.107173919677734,
+      "accuracy": 0.89171731676219,
+      "precision": 0.8632428584952963,
+      "recall": 0.5780904390459239,
+      "f1": 0.6924594664150296,
+      "roc_auc": 0.7837821138910459,
+      "fpr": 0.02447328444491017,
+      "train_time_sec": 1127.1914563179016,
+      "composite_rank": 1.5
+    },
+    {
+      "config": "D",
+      "hidden_dims": [
+        128,
+        32
+      ],
+      "n_params": 27042,
+      "best_epoch": 41,
+      "final_epoch": 51,
+      "best_val_loss": 0.7446857763059211,
+      "threshold": 6.177337169647217,
+      "accuracy": 0.8902848371563324,
+      "precision": 0.8587483318114771,
+      "recall": 0.574155039706207,
+      "f1": 0.6881897165565747,
+      "roc_auc": 0.7825848559434577,
+      "fpr": 0.025236917682595877,
+      "train_time_sec": 463.3877172470093,
+      "composite_rank": 3.25
+    }
+  ]
+}

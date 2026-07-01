@@ -1,0 +1,48 @@
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║               PHASE 8 — KẾT LUẬN DEBUG & KHUYẾN NGHỊ                   ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+1. Best Epoch = 1 có đúng hay không?
+   → ĐÚNG về mặt kỹ thuật (epoch 1 có val_loss nhỏ nhất trong lịch sử)
+   → SAI về mặt ý nghĩa (do beta≈0.033 ở epoch 1 làm val_loss nhân tạo thấp)
+   → Model ở epoch 1 chưa học được gì đáng kể
+
+2. Nếu sai thì sai ở đâu?
+   → Hàm train_config() trong notebook áp dụng early stopping ngay từ epoch 1
+   → Val_loss tự nhiên TĂNG trong warmup vì beta (KL weight) tăng dần
+   → Early stopping nhầm tưởng model không cải thiện → dừng ở epoch 11
+   → Best epoch 1 = artefact của KL annealing, không phải model tốt nhất thực sự
+
+3. File nào gây lỗi?
+   → FILE: notebooks/experiment_hidden_dims.ipynb
+   → HÀM: train_config() (Section 5 — Cell #VSC-c54aeb58)
+   → DÒNG SAI: `if val_loss < best_val_loss:` áp dụng từ epoch 1, không bỏ qua warmup
+   → THIẾU: warmup-aware early stopping (so sánh với scripts/train.py)
+
+4. Cần sửa gì?
+   → Thêm điều kiện vào vòng lặp training:
+     (a) Trong warmup (epoch ≤ 30): KHÔNG kích hoạt early stopping
+         Chỉ checkpoint nếu val_RECON cải thiện (beta độc lập)
+     (b) Bước vào post-warmup (epoch = 31): RESET counter và best_val_loss
+     (c) Sau warmup (epoch > 30): early stopping bình thường trên total val_loss
+   → Xem hàm train_config_v2() trong Section 12
+
+5. Có nên tin kết quả so sánh hiện tại không?
+   → KHÔNG. Kết quả không đáng tin cậy vì:
+     - Tất cả 4 config chỉ train ≈11 epoch (bên trong warmup zone 30 epoch)
+     - Model "best" của mỗi config thực ra là model sau 1 epoch với beta≈0.033
+     - So sánh F1/Recall/ROC-AUC trên model chưa converge → không có ý nghĩa
+     - Kết quả phụ thuộc vào random initialization hơn là kiến trúc
+
+6. Có cần chạy lại toàn bộ thí nghiệm không?
+   → CÓ. Cần chạy lại với train_config_v2() (Section 12):
+     - Kỳ vọng best_epoch ≈ 35–40 (sau warmup end = epoch 30)
+     - Training sẽ chạy ≈ 50–100 epoch
+     - Mỗi config mất khoảng 30–60 phút trên CPU (tổng ≈ 2–4 giờ)
+     - Cân nhắc dùng QUICK_EXPERIMENT=True để test fix trước
+
+════════════════════════════════════════════════════════════════════════════
+TÓM TẮT: BUG được xác nhận. Kết quả thí nghiệm hiện tại KHÔNG ĐỦ ĐỘ TIN
+CẬY để đưa vào báo cáo đồ án. Cần chạy lại sau khi áp dụng Section 12.
+════════════════════════════════════════════════════════════════════════════

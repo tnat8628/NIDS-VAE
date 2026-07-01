@@ -1,0 +1,75 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.x. Lựa chọn checkpoint tối ưu trong quá trình huấn luyện
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.x.1. Mục tiêu
+───────────────
+Trong huấn luyện mạng nơ-ron sâu, số epoch tốt nhất (best epoch) không
+nhất thiết là epoch cuối cùng của quá trình tối ưu hóa. Phần này trình
+bày cơ sở lý luận và bằng chứng thực nghiệm về việc lựa chọn checkpoint
+tại epoch 58 cho mô hình Variational Autoencoder (VAE) trong hệ
+thống phát hiện xâm nhập mạng (NIDS) dựa trên tập dữ liệu CICIDS2017.
+
+4.x.2. Thiết lập thực nghiệm
+─────────────────────────────
+Mô hình VAE được huấn luyện với cấu hình:
+  - Kiến trúc     : input_dim=66, hidden_dims=[128, 64], latent_dim=16
+                    (36,834 tham số có thể học)
+  - Tập huấn luyện: 402,229 luồng mạng bình thường (BENIGN — CICIDS2017)
+  - Tập validation: 100,558 luồng mạng (không tham gia cập nhật trọng số)
+  - Optimizer     : Adam (lr=0.001, weight_decay=1e-05)
+  - Max epochs    : 100
+  - KL Annealing  : beta tăng tuyến tính 0.0 → 1.0 trong 30 epoch đầu
+  - Early stopping: patience = 10 (chỉ kích hoạt sau khi KL warmup kết thúc)
+
+[CHÈN BẢNG BEST EPOCH]
+
+4.x.3. Kết quả
+──────────────
+Sau khi KL warmup hoàn tất (epoch 30), mô hình được đánh giá trên
+tập validation sau mỗi epoch. Validation loss thấp nhất đạt được tại
+epoch 58:
+
+  - Best Validation Loss    : 0.740856
+    (Reconstruction Loss = 0.635419, KL Divergence = 0.105437)
+  - Train Loss @ Best Epoch : 0.772250
+  - Generalization Gap      : -0.031394  (Validation − Train)
+  - Final Epoch             : 68  (training dừng do early stopping)
+  - Final Validation Loss   : 0.746338  (tăng +0.005482 so với best)
+  - Generalization Gap @ Final: -0.019182  (tăng +0.012212)
+
+[CHÈN HÌNH LEARNING CURVE]
+
+4.x.4. Phân tích
+────────────────
+Sau epoch 58, mô hình tiếp tục được huấn luyện nhưng Validation Loss
+không giảm thêm. Đây là dấu hiệu điển hình của overfitting:
+
+  (a) Train Loss tiếp tục giảm (0.772250 → 0.765520),
+      cho thấy mô hình vẫn đang học trên tập train.
+  (b) Validation Loss tăng (0.740856 → 0.746338),
+      cho thấy khả năng tổng quát hóa đang suy giảm.
+  (c) Generalization Gap tăng (-0.031394 → -0.019182),
+      xác nhận xu hướng overfit ngày càng rõ ràng hơn.
+
+Cơ chế early stopping phát hiện điều này: sau 10 epoch liên
+tiếp (59–68) không cải thiện Validation Loss (bằng đúng
+patience = 10), quá trình huấn luyện dừng lại.
+
+[CHÈN HÌNH GENERALIZATION GAP]
+
+4.x.5. Kết luận
+───────────────
+Checkpoint tại epoch 58 (vae_best.pth) được lựa chọn vì:
+
+  (1) Validation Loss thấp nhất (0.740856) trong toàn bộ 68 epoch
+      → khả năng tổng quát hóa tốt nhất trên dữ liệu chưa thấy.
+  (2) Generalization Gap nhỏ nhất tại best epoch → mức độ overfitting thấp nhất.
+  (3) Early stopping xác nhận đây là điểm tối ưu: 10 epoch
+      sau best epoch không cải thiện, đúng bằng patience = 10.
+
+Checkpoint này bao gồm toàn bộ state_dict của mô hình (encoder, mu layer,
+logvar layer, decoder — 36,834 tham số) và được sử dụng nhất quán
+cho cả đánh giá ngưỡng (threshold calibration) lẫn suy luận thực tế
+(FastAPI inference), đảm bảo không có sự phân kỳ giữa huấn luyện và triển khai.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

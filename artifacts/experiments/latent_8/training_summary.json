@@ -1,0 +1,26 @@
+{
+  "hyperparameters": {
+    "input_dim": 66,
+    "latent_dim": 8,
+    "hidden_dims": [
+      128,
+      64
+    ],
+    "beta": 1.0,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "batch_size": 1024,
+    "max_epochs": 100,
+    "patience": 10,
+    "grad_clip": 5.0,
+    "seed": 42
+  },
+  "results": {
+    "best_epoch": 1,
+    "final_epoch": 11,
+    "stopped_early": true,
+    "best_val_loss": 0.3797250021286685,
+    "n_params": 35282
+  },
+  "total_time_seconds": 102.76
+}

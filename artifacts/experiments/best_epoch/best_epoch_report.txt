@@ -1,0 +1,75 @@
+
+╔══════════════════════════════════════════════════════════════════╗
+║      LÝ DO LỰA CHỌN CHECKPOINT TẠI BEST EPOCH                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Trong quá trình huấn luyện mô hình Variational Autoencoder (VAE) cho
+hệ thống phát hiện xâm nhập mạng (NIDS), mỗi epoch cập nhật toàn bộ
+trọng số của mô hình thông qua thuật toán tối ưu hóa (Adam optimizer,
+lr=0.001). Mô hình có kiến trúc với
+input_dim=66, hidden_dims=[128, 64],
+latent_dim=16, và được huấn luyện trên 402,229 mẫu train,
+đánh giá trên 100,558 mẫu validation.
+
+Sau mỗi epoch, mô hình được đánh giá trên tập validation (tập dữ liệu
+không tham gia vào quá trình cập nhật trọng số). Chỉ số validation loss
+phản ánh khả năng tổng quát hóa (generalization) thực sự của mô hình —
+tức là khả năng hoạt động tốt trên dữ liệu chưa thấy bao giờ.
+
+Epoch tốt nhất (best epoch = 58) là epoch có validation loss thấp
+nhất trong toàn bộ quá trình huấn luyện (val_loss = 0.740856).
+Tại epoch này, mô hình đạt được sự cân bằng tốt nhất giữa:
+  - Tái cấu trúc dữ liệu (reconstruction loss = 0.635419)
+  - Chính quy hóa không gian latent (KL divergence = 0.105437)
+
+Không lựa chọn epoch cuối (final epoch = 68) vì tại epoch này,
+val_loss = 0.746338, cao hơn best epoch +0.005482. Đây là dấu
+hiệu cho thấy mô hình bắt đầu overfit trên tập train — train loss tiếp tục
+giảm nhưng val loss không cải thiện thêm.
+
+Cơ chế early stopping với patience = 10 đã phát hiện điều này:
+sau 10 epoch không cải thiện liên tiếp (từ epoch
+59 đến epoch 68), quá trình huấn luyện được dừng lại.
+
+Checkpoint tại best epoch được lưu tự động thành vae_best.pth, bao gồm
+toàn bộ state_dict (encoder, mu layer, logvar layer, decoder). File này
+được sử dụng cho cả evaluate (đánh giá threshold) và inference (dự đoán
+trực tiếp trong backend FastAPI).
+
+Tổng thời gian huấn luyện: 773.1 giây (12.9 phút).
+
+
+=== BẢNG TÓM TẮT BEST EPOCH ===
+                         metric     value
+                     best_epoch 58.000000
+                  best_val_loss  0.740856
+                best_train_loss  0.772250
+                    final_epoch 68.000000
+                 final_val_loss  0.746338
+               final_train_loss  0.765520
+delta_val_loss_final_minus_best  0.005482
+        generalization_gap_best -0.031394
+       generalization_gap_final -0.019182
+
+=== BẢNG SO SÁNH BEST VS FINAL ===
+         criterion best_epoch final_epoch
+             epoch         58          68
+        train_loss    0.77225     0.76552
+          val_loss   0.740856    0.746338
+generalization_gap  -0.031394   -0.019182
+   checkpoint_used       True       False
+
+=== BẢNG EPOCH LÂN CẬN (53–63) ===
+       train_loss  val_loss  train_recon  val_recon  train_kl    val_kl  beta  is_best
+epoch                                                                                 
+53       0.777842  0.759143     0.670133   0.658506  0.107709  0.100637   1.0    False
+54       0.776552  0.752459     0.668542   0.649542  0.108010  0.102917   1.0    False
+55       0.769741  0.749295     0.664254   0.650446  0.105488  0.098849   1.0    False
+56       0.771405  0.758369     0.673514   0.669832  0.097891  0.088536   1.0    False
+57       0.790780  0.749407     0.681099   0.645002  0.109680  0.104406   1.0    False
+58       0.772250  0.740856     0.662123   0.635419  0.110128  0.105437   1.0     True
+59       0.775018  0.751979     0.672307   0.660252  0.102711  0.091728   1.0    False
+60       0.770698  0.746178     0.673683   0.649591  0.097015  0.096587   1.0    False
+61       0.768735  0.745317     0.665258   0.650111  0.103477  0.095206   1.0    False
+62       0.774440  0.767406     0.676782   0.685959  0.097658  0.081447   1.0    False
+63       0.780246  0.749828     0.679446   0.654214  0.100800  0.095615   1.0    False

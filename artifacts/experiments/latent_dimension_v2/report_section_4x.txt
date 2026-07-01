@@ -1,0 +1,62 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KẾT LUẬN THÍ NGHIỆM LATENT DIMENSION — v2 (WARMUP-AWARE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+QUICK_EXPERIMENT = False
+✓ Full mode — kết quả có thể dùng cho báo cáo.
+
+────────────────────────────────────────────────────────────────────
+1. KẾT QUẢ CŨ (v1) SAI Ở ĐÂU?
+────────────────────────────────────────────────────────────────────
+- Code v1 so sánh total val_loss = recon + beta * kl để chọn best_epoch.
+- Trong warmup, beta tăng dần từ 0 → 1 nên val_loss tự nhiên tăng mỗi epoch
+  dù model không hề xấu đi.
+- Early stopping nhầm lẫn đây là "không cải thiện" và kích hoạt sớm:
+    best_epoch  = 1    (epoch đầu tiên có beta nhỏ nhất → val_loss thấp nhất)
+    final_epoch = 11   (= 1 + patience = 1 + 10)
+- Model dừng hoàn toàn trong giai đoạn warmup, chưa bao giờ học đúng nghĩa.
+
+────────────────────────────────────────────────────────────────────
+2. LOGIC WARMUP-AWARE ĐÃ SỬA GÌ?
+────────────────────────────────────────────────────────────────────
+- PHASE 1 (WARMUP, epoch 1 → 30):
+  * KHÔNG đếm epochs_no_improve.
+  * Checkpoint theo val_recon (ổn định, không phụ thuộc beta).
+- PHASE 2 (epoch 31 — POST_WARMUP_START):
+  * Reset: best_val_loss = ∞, epochs_no_improve = 0, best_epoch = None.
+  * Bắt đầu monitor total val_loss với beta đã cố định = 1.0.
+- PHASE 3 (epoch > 30 — POST_WARMUP):
+  * Early stopping bình thường theo total val_loss.
+  * Val_loss phản ánh đúng chất lượng model vì beta không còn thay đổi.
+
+────────────────────────────────────────────────────────────────────
+3. BEST EPOCH SAU FIX
+────────────────────────────────────────────────────────────────────
+  latent_dim = 8  : best_epoch = 38  | final_epoch = 48
+  latent_dim = 16 : best_epoch = 58  | final_epoch = 68
+  latent_dim = 32 : best_epoch = 32  | final_epoch = 42
+  (Tất cả best_epoch phải > 30 — xác nhận ở Section 10)
+
+────────────────────────────────────────────────────────────────────
+4. LATENT DIMENSION TỐT NHẤT (v2)
+────────────────────────────────────────────────────────────────────
+  Theo F1-Score  : latent_dim = 16   (0.6929)
+  Theo Recall    : latent_dim = 16   (0.5778)
+  Theo ROC-AUC   : latent_dim = 8   (0.7847)
+  Theo FPR (↓)   : latent_dim = 16   (0.0240)
+
+────────────────────────────────────────────────────────────────────
+5. CÓ THỂ ĐƯA VÀO BÁO CÁO KHÔNG?
+────────────────────────────────────────────────────────────────────
+  ✓ QUICK_EXPERIMENT=False — kết quả đủ tin cậy cho báo cáo.
+
+Bảng kết quả (copy vào Chương 4):
+| Latent | Accuracy | Precision | Recall | F1 | ROC-AUC | FPR |
+|:------:|:--------:|:---------:|:------:|:--:|:-------:|:---:|
+| 8      | 0.8913 | 0.8640 | 0.5748 | 0.6903 | 0.7847 | 0.0242 |
+| 16     | 0.8920 | 0.8654 | 0.5778 | 0.6929 | 0.7835 | 0.0240 |
+| 32     | 0.8903 | 0.8563 | 0.5766 | 0.6891 | 0.7799 | 0.0259 |
+
+Artifacts lưu tại: artifacts/experiments/latent_dimension_v2/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

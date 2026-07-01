@@ -1,0 +1,82 @@
+# Project-specific hidden files
+.claude/
+CLAUDE.md
+docs/
+fie.md
+PROJECT_EXPLAINED.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data files (large raw data)
+data/raw/
+data/processed/
+data/train/
+data/test/
+data/validation/
+
+# Model artifacts (large binaries)
+artifacts/models/*.pth
+!artifacts/models/vae_best.pth
+artifacts/scaler/*.joblib
+!artifacts/scaler/scaler.joblib
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+frontend/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Docker
+# .dockerignore is tracked because Docker builds depend on a small context.
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+

@@ -1,0 +1,8 @@
+﻿Metric,Value,Value (%)
+Accuracy,0.892018,89.20%
+Precision,0.865398,86.54%
+Recall,0.577806,57.78%
+F1-score,0.692947,69.29%
+ROC-AUC,0.783550,78.35%
+False Positive Rate,0.024016,2.40%
+Threshold,6.031263,N/A

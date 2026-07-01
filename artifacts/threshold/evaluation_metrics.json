@@ -1,0 +1,50 @@
+{
+  "metrics": {
+    "accuracy": 0.8920183702016513,
+    "precision": 0.865397803403564,
+    "recall": 0.5778063201198466,
+    "f1_score": 0.692947466091827,
+    "f2_score": 0.6189441817108943,
+    "roc_auc": 0.7835496556116806,
+    "pr_auc": 0.6585135373535823,
+    "false_positive_rate": 0.02401585746851503,
+    "false_negative_rate": 0.4221936798801535,
+    "true_positive_rate": 0.5778063201198466,
+    "anomaly_rate": 0.1407964546996274,
+    "n_samples": 2019575,
+    "n_predicted_anomaly": 284349,
+    "n_predicted_normal": 1735226,
+    "n_true_anomaly": 425878,
+    "n_true_normal": 1593697
+  },
+  "threshold": 6.0312628746032715,
+  "percentile": 99.0,
+  "score_mode": "recon",
+  "alpha": 0.05,
+  "selection_method": "fixed_percentile",
+  "max_fpr": 0.07,
+  "score_stats": {
+    "score_mode": "recon",
+    "alpha": 0.05,
+    "recon_normalization": {
+      "mean": 0.6354213953018188,
+      "std": 2.433183193206787
+    },
+    "kl_normalization": {
+      "mean": 0.1057046428322792,
+      "std": 1.4541215896606445
+    },
+    "validation_score_stats": {
+      "min": 0.009852877818048,
+      "max": 631.3643798828125,
+      "mean": 0.6354213953018188,
+      "median": 0.25866270065307617,
+      "std": 2.433183193206787,
+      "p90": 1.3341871500015259,
+      "p95": 2.8716506958007812,
+      "p97_5": 3.968383312225342,
+      "p99": 6.0312628746032715
+    }
+  },
+  "created_at": "2026-06-26T04:08:27.529369+00:00"
+}

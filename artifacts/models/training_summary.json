@@ -1,0 +1,45 @@
+{
+  "hyperparameters": {
+    "input_dim": 66,
+    "latent_dim": 16,
+    "hidden_dims": [
+      128,
+      64
+    ],
+    "beta": 1.0,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "batch_size": 1024,
+    "max_epochs": 100,
+    "patience": 10,
+    "grad_clip": 5.0,
+    "seed": 42
+  },
+  "kl_annealing": {
+    "beta_start": 0.0,
+    "beta_end": 1.0,
+    "beta_warmup_epochs": 30,
+    "kl_annealing_type": "linear",
+    "use_free_bits": false,
+    "free_bits_lambda": 0.05
+  },
+  "results": {
+    "best_epoch": 58,
+    "final_epoch": 68,
+    "stopped_early": true,
+    "best_val_loss": 0.7408559779928188,
+    "best_val_recon": 0.6354186113434609,
+    "best_val_kl": 0.1054373685684469,
+    "n_params": 36834,
+    "n_train_samples": 402229,
+    "n_val_samples": 100558
+  },
+  "device": "cpu",
+  "total_time_seconds": 828.35,
+  "artifacts": {
+    "checkpoint": "D:\\nids-vae-project\\artifacts\\models\\vae_best.pth",
+    "model_config": "D:\\nids-vae-project\\artifacts\\models\\model_config.json",
+    "history": "D:\\nids-vae-project\\artifacts\\models\\training_history.json",
+    "summary": "D:\\nids-vae-project\\artifacts\\models\\training_summary.json"
+  }
+}

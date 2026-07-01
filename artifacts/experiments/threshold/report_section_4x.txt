@@ -1,0 +1,83 @@
+
+---
+
+# 4.x. Thực nghiệm Lựa Chọn Ngưỡng Phát Hiện Bất Thường
+
+## 4.x.1. Mục Tiêu Thí Nghiệm
+
+Trong kiến trúc NIDS-VAE, ngưỡng phát hiện bất thường (threshold) đóng vai trò then chốt trong
+việc quyết định một luồng mạng (network flow) có được phân loại là tấn công hay không.
+Ngưỡng này được xác định dựa trên phân phối reconstruction error của VAE trên tập dữ liệu
+validation chỉ chứa lưu lượng bình thường (BENIGN).
+
+Thực nghiệm này nhằm **chứng minh lý do lựa chọn ngưỡng phát hiện** bằng cách so sánh
+hiệu năng phát hiện bất thường tại ba mức percentile: 90, 95, và 99.
+Model VAE được giữ nguyên trong suốt thí nghiệm — chỉ thay đổi giá trị ngưỡng.
+
+**Công thức tính ngưỡng:**
+
+$$\tau_p = \text{Percentile}_p(\{e_i : x_i \in \mathcal{D}_{\text{val,BENIGN}}\})$$
+
+Trong đó $e_i = \frac{1}{d}\sum_{j=1}^{d}(x_{ij} - \hat{x}_{ij})^2$ là reconstruction error MSE.
+
+## 4.x.2. Thiết Kế Thí Nghiệm
+
+| Thí nghiệm | Percentile | Ngưỡng (τ) | Đặc điểm |
+|---|---|---|---|
+| A | 90 | 1.334187 | Ngưỡng thấp — nhạy cảm cao |
+| B | 95 | 2.871651 | Ngưỡng trung bình — cân bằng |
+| C | 99 | 6.031263 | Ngưỡng cao — chính xác |
+
+Tập đánh giá: **2,019,575 flow** từ dataset CICIDS2017, bao gồm 1,593,697 flow
+bình thường và 425,878 flow tấn công (21.1% anomaly rate).
+
+## 4.x.3. Kết Quả Thí Nghiệm
+
+Bảng dưới đây trình bày kết quả đánh giá hiệu năng phát hiện bất thường theo từng ngưỡng:
+
+| Percentile | Threshold | Precision | Recall | F1-score | FPR | FNR | ROC-AUC |
+|---|---|---|---|---|---|---|---|
+| 90 | 1.3342 | 0.5685 | 0.6099 | 0.5885 | 0.1237 | 0.3901 | 0.7835 |
+| 95 | 2.8717 | 0.7013 | 0.5917 | 0.6419 | 0.0673 | 0.4083 | 0.7835 |
+| 99 | 6.0313 | 0.8654 | 0.5778 | 0.6929 | 0.0240 | 0.4222 | 0.7835 |
+
+*FPR: False Positive Rate; FNR: False Negative Rate. Đánh giá trên 2,019,575 flow.*
+
+## 4.x.4. Phân Tích Kết Quả
+
+**Thí nghiệm A — Percentile 90 (τ = 1.3342):**
+Với ngưỡng thấp nhất, hệ thống phân loại nhiều flow là bất thường hơn, dẫn đến
+Recall đạt 0.6099 — phát hiện được 61.0% tổng số luồng tấn công.
+Tuy nhiên, False Positive Rate tăng lên 0.1237 (12.37%),
+nghĩa là 197,134 luồng bình thường bị báo nhầm là tấn công.
+Precision đạt 0.5685, cho thấy không phải mọi cảnh báo đều chính xác.
+
+**Thí nghiệm C — Percentile 99 (τ = 6.0313):**
+Ngưỡng cao nhất dẫn đến Precision tăng lên 0.8654, nhưng
+Recall giảm xuống còn 0.5778 — hệ thống bỏ sót 179,803
+luồng tấn công thực sự (FNR = 0.4222).
+Đổi lại, False Positive Rate giảm đáng kể xuống 0.0240 (2.40%),
+giảm đáng kể số cảnh báo nhầm so với Experiment A.
+
+**Thí nghiệm B — Percentile 99 (τ = 6.0313) — Khuyến nghị:**
+Percentile 99 đạt F1-score cao nhất là 0.6929,
+thể hiện sự cân bằng tốt nhất giữa Precision (0.8654)
+và Recall (0.5778).
+FPR ở mức 0.0240 (2.40%) là chấp nhận được trong môi trường
+vận hành thực tế.
+
+## 4.x.5. Kết Luận
+
+Kết quả thí nghiệm cho thấy ngưỡng tại percentile 90 giúp tăng Recall
+lên 0.6099 nhưng đồng thời làm tăng False Positive Rate lên 0.1237.
+Ngược lại, percentile 99 giảm đáng kể False Positive Rate xuống 0.0240
+nhưng làm giảm Recall xuống 0.5778 do bỏ sót 179,803 mẫu tấn công.
+Percentile **99** đạt sự cân bằng tốt nhất giữa Precision, Recall và F1-score
+(F1 = 0.6929), do đó được lựa chọn làm ngưỡng phát hiện bất thường
+trong hệ thống NIDS-VAE đề xuất, với giá trị threshold = **6.031263**.
+
+---
+*Hình minh họa: `artifacts/experiments/threshold/error_distribution.png` và
+`artifacts/experiments/threshold/threshold_comparison.png`*
+
+*Dữ liệu đầy đủ: `artifacts/experiments/threshold/threshold_comparison.csv`*

@@ -1,0 +1,5 @@
+{
+  "threshold": 1.8236619234085083,
+  "percentile": 99.0,
+  "selection_method": "percentile_on_validation_errors"
+}

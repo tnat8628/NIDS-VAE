@@ -1,0 +1,133 @@
+---
+
+# FAQ — Trả Lời Câu Hỏi Giảng Viên
+
+## Q1: Tại sao Recall chỉ đạt 57.8%?
+
+**A:** Recall = 0.5778 (57.8%) do 179,803 trong số 425,878 luồng tấn công
+không bị phát hiện (FNR = 42.22%). Nguyên nhân kỹ thuật:
+
+1. **Đặc tính của unsupervised VAE**: Mô hình chỉ học phân phối lưu lượng bình thường (BENIGN).
+   Nó không có thông tin về attack trông như thế nào trong quá trình huấn luyện.
+
+2. **Attack có đặc trưng gần BENIGN**: Tập CICIDS2017 chứa nhiều loại tấn công như
+   Infiltration, Web Attack (XSS, SQL Injection, Brute Force), và Heartbleed, có packet size,
+   flow duration và byte distribution rất gần với lưu lượng bình thường.
+
+3. **Hệ quả**: VAE encoder maps những attack này vào vùng gần BENIGN trong latent space 16D,
+   decoder tái tạo được tốt → reconstruction error thấp → không vượt threshold 6.0313 → FN.
+
+4. **Trade-off**: Để tăng Recall, cần hạ threshold (ví dụ xuống P90 = 1.3342),
+   nhưng điều này làm FPR tăng từ 2.40% lên ~12.4%.
+
+---
+
+## Q2: Tại sao vẫn có 38,274 False Positive dù dùng threshold P99?
+
+**A:** 38,274 luồng bình thường bị báo nhầm (FPR = 2.40%) là hệ quả tất yếu của:
+
+1. **Phân phối error có đuôi dài (heavy-tail)**: Reconstruction error của BENIGN flows không
+   phân phối chuẩn — có một số BENIGN flows "ngoại lệ" với error rất cao. Ngay cả threshold P99
+   vẫn bỏ sót 1% BENIGN outlier (theo định nghĩa percentile).
+
+2. **BENIGN traffic không đồng nhất**: CICIDS2017 chứa nhiều loại lưu lượng bình thường
+   (HTTP, FTP, SSH, HTTPS...). Một số pattern ít phổ biến có thể có reconstruction error cao
+   vì VAE chưa học đủ biến thể đó.
+
+3. **Nhược điểm cơ bản của anomaly detection**: Không có ranh giới học được giữa "BENIGN hiếm"
+   và "attack thông thường". Cả hai đều có error cao so với BENIGN phổ biến.
+
+4. **Giải pháp**: Ensemble với rule-based filter, hoặc bổ sung một classifier nhỏ
+   (semi-supervised) để giảm FP sau bước anomaly detection.
+
+---
+
+## Q3: Tại sao ROC-AUC chỉ đạt 78.35% chứ không cao hơn?
+
+**A:** ROC-AUC = 0.7835 phản ánh giới hạn của phương pháp:
+
+1. **Latent space 16D chưa tách biệt hoàn toàn**: Với input_dim=66 và latent_dim=16,
+   encoder cần nén 66 features xuống 16 chiều. Một số attack (đặc biệt Web Attack, Infiltration)
+   có biểu diễn nằm gần vùng BENIGN trong không gian 16D.
+
+2. **VAE không được train để maximize phân biệt**: Hàm mục tiêu VAE là ELBO (reconstruction loss + KL divergence),
+   không phải discriminative objective như cross-entropy. Kết quả là feature extraction
+   không được tối ưu cho bài toán phân loại.
+
+3. **Chồng lấp reconstruction error**: Một số BENIGN flows có error cao (do traffic hiếm)
+   và một số ATTACK có error thấp (do giống BENIGN) → phân phối hai lớp chồng lấp → AUC bị giới hạn.
+
+4. **Giải pháp tiềm năng**: Sử dụng adversarial training (AAE — Adversarial Autoencoder),
+   hoặc thêm contrastive loss để tăng tách biệt trong latent space.
+
+---
+
+## Q4: Accuracy 89.20% có nghĩa gì với dataset này?
+
+**A:** Accuracy = 89.20% cần được diễn giải cẩn thận:
+
+- Dataset test gồm 78.9% BENIGN và 21.1% ANOMALY — **mất cân bằng nghiêm trọng**.
+- Một mô hình ngây thơ "luôn dự đoán NORMAL" đã đạt Accuracy = 78.91%.
+- Mô hình VAE chỉ vượt 10.29% so với naive classifier về Accuracy.
+- **Kết luận**: Với dataset mất cân bằng, F1-score (69.29%) và ROC-AUC (78.35%)
+  là các metric đánh giá đáng tin cậy hơn Accuracy.
+
+---
+
+## Q5: Tại sao không dùng supervised learning thay vì VAE?
+
+**A:** VAE-based anomaly detection có lý do chính đáng:
+
+1. **Thu thập dữ liệu**: Dữ liệu BENIGN dễ thu thập (traffic hàng ngày), nhưng dữ liệu
+   ATTACK khó, tốn kém, và không đầy đủ (luôn có attack mới chưa từng gặp).
+
+2. **Phát hiện zero-day attack**: Supervised classifier chỉ phát hiện được attack đã biết
+   (có trong training set). VAE phát hiện được *bất kỳ* traffic nào khác biệt với BENIGN.
+
+3. **Thực tế triển khai**: Trong môi trường production, không thể có nhãn ATTACK cho mọi
+   kiểu tấn công mới. Unsupervised approach cho phép hệ thống hoạt động ngay khi có lưu lượng bình thường.
+
+4. **Trade-off**: Supervised approach sẽ có Recall cao hơn với attack đã biết, nhưng
+   thất bại hoàn toàn với zero-day attack.
+
+---
+
+## Q6: Tại sao chọn threshold P99 mà không phải P90 hay P95?
+
+**A:** Quyết định chọn P99 dựa trên thực nghiệm so sánh 3 mức (xem `threshold_experiment.ipynb`):
+
+| Percentile | Threshold | Precision | Recall | F1 | FPR |
+|---|---|---|---|---|---|
+| 90 | ~1.33 | ~56.9% | ~61.0% | ~58.9% | ~12.4% |
+| 95 | ~2.87 | ~70.1% | ~59.2% | ~64.2% | ~6.7% |
+| 99 | 6.0313 | **86.5%** | 57.8% | **69.3%** | **2.40%** |
+
+- P99 đạt **F1 cao nhất** (69.29%) — cân bằng tốt nhất giữa Precision và Recall.
+- FPR chỉ 2.40% — chấp nhận được cho môi trường NIDS production.
+- Trong NIDS có yêu cầu Precision cao (tránh false alarm), P99 là lựa chọn hợp lý.
+
+---
+
+## Q7: Làm sao cải thiện Recall trong tương lai?
+
+**A:** Các hướng cải thiện khả thi:
+
+1. **Bổ sung semi-supervised learning**: Thêm một số nhãn ATTACK (khoảng 1-5%) vào
+   training để model biết được một phần phân phối attack.
+
+2. **Adversarial Autoencoder (AAE)**: Thay VAE bằng AAE với discriminator, tách biệt
+   tốt hơn BENIGN và ATTACK trong latent space.
+
+3. **Ensemble approach**: Kết hợp VAE reconstruction error với rule-based detection
+   (ví dụ: packet rate threshold) để bắt được attack tinh vi.
+
+4. **Data augmentation**: Tăng cường tập training với synthetic ATTACK samples để
+   model học được ranh giới phân loại tốt hơn.
+
+5. **Feature engineering**: Bổ sung các feature đặc trưng của attack (sequence pattern,
+   timing analysis) mà VAE hiện tại chưa capture được.
+
+---
+
+*Tất cả số liệu được trích xuất trực tiếp từ artifacts thực nghiệm. Không hard-code.*
+*Nguồn: `artifacts/threshold/evaluation_metrics.json`, `artifacts/threshold/confusion_matrix.json`*

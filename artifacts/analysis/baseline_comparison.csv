@@ -1,0 +1,4 @@
+Model,Accuracy,Precision,Recall,F1-score
+Always NORMAL,78.9125%,0.0000%,0.0000%,0.0000%
+Always ANOMALY,21.0875%,21.0875%,100.0000%,34.8302%
+VAE (đề xuất),89.2018%,86.5398%,57.7806%,69.2947%
