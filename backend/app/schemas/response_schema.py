@@ -14,6 +14,10 @@ Schemas này là nguồn duy nhất định nghĩa cấu trúc JSON trả về �
 được thay đổi field name mà không cập nhật frontend và docs/api-spec.md.
 """
 
+from datetime import datetime
+from typing import Literal
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -80,7 +84,150 @@ class PredictionResponse(BaseModel):
     )
 
 
+class PredictionRunResponse(BaseModel):
+    """Compact response after predicting a persisted upload."""
+
+    status: str = Field(default="ok")
+    upload_id: UUID
+    inference_run_id: UUID
+    summary: PredictionSummary
+    results_url: str
+
+
+class StoredFlowPrediction(FlowPrediction):
+    """One paginated database-backed prediction row."""
+
+    severity: Literal["low", "medium", "high", "critical"]
+
+
+class PaginationResponse(BaseModel):
+    """Server-side pagination metadata."""
+
+    page: int
+    page_size: int
+    total_items: int
+    total_pages: int
+    has_previous: bool
+    has_next: bool
+
+
+class HistogramBinResponse(BaseModel):
+    """One aggregate reconstruction-error histogram bin."""
+
+    bin: str
+    normal: int
+    anomaly: int
+
+
+class PredictionAggregatesResponse(BaseModel):
+    """Bounded aggregates computed from the complete inference run."""
+
+    histogram: list[HistogramBinResponse]
+    top_anomalies: list[StoredFlowPrediction]
+
+
+class PaginatedPredictionResponse(BaseModel):
+    """Database-backed prediction page for one upload."""
+
+    status: str = Field(default="ok")
+    upload_id: UUID
+    inference_run_id: UUID
+    summary: PredictionSummary
+    items: list[StoredFlowPrediction]
+    pagination: PaginationResponse
+    aggregates: PredictionAggregatesResponse
+
+
+class DashboardUploadAggregate(BaseModel):
+    total_uploads: int
+    total_uploaded_flows: int
+
+
+class DashboardAnalysisAggregate(BaseModel):
+    analyzed_uploads: int
+    total_analyzed_flows: int
+    anomaly_count: int
+    normal_count: int
+    anomaly_rate: float
+
+
+class DashboardClassification(BaseModel):
+    normal: int
+    anomaly: int
+
+
+class DashboardLatestActivity(BaseModel):
+    latest_upload_id: UUID | None
+    latest_run_id: UUID | None
+    latest_filename: str | None
+    latest_uploaded_at: datetime | None
+    latest_predicted_at: datetime | None
+
+
+class DashboardOverviewResponse(BaseModel):
+    """System-wide aggregates, independent from the Results page context."""
+
+    status: str = Field(default="ok")
+    uploads: DashboardUploadAggregate
+    analysis: DashboardAnalysisAggregate
+    histogram: list[HistogramBinResponse]
+    classification: DashboardClassification
+    latest_activity: DashboardLatestActivity
+    
+    
 # ── Health response ───────────────────────────────────────────────────────────
+
+class UploadListItemResponse(BaseModel):
+    """One CSV upload row for the upload management page."""
+
+    upload_id: UUID
+    filename: str
+    row_count: int
+    col_count: int
+    created_at: datetime
+    analysis_status: Literal["pending", "completed"]
+    latest_run_id: UUID | None
+    latest_predicted_at: datetime | None
+    anomaly_count: int
+    normal_count: int
+
+
+class UploadListResponse(BaseModel):
+    """Paginated CSV upload management response."""
+
+    status: str = Field(default="ok")
+    items: list[UploadListItemResponse]
+    pagination: PaginationResponse
+
+
+class DeleteUploadResponse(BaseModel):
+    """Response returned after deleting one upload and all dependent data."""
+
+    status: str = Field(default="ok")
+    upload_id: UUID
+    message: str
+
+
+class GlobalFlowItemResponse(BaseModel):
+    """One globally browsable prediction row from the latest run of an upload."""
+
+    upload_id: UUID
+    filename: str
+    run_id: UUID
+    row_index: int
+    reconstruction_error: float
+    prediction: int
+    prediction_label: Literal["normal", "anomaly"]
+    created_at: datetime
+
+
+class GlobalFlowListResponse(BaseModel):
+    """Database-backed global flow explorer response."""
+
+    status: str = Field(default="ok")
+    items: list[GlobalFlowItemResponse]
+    pagination: PaginationResponse
+
 
 class HealthResponse(BaseModel):
     """
@@ -130,6 +277,7 @@ class UploadResponse(BaseModel):
 
     Attributes:
         status     : "ok" nếu upload hợp lệ.
+        upload_id  : UUID của upload đã lưu trong database.
         filename   : Tên file đã tải lên.
         row_count  : Số hàng đọc được từ CSV.
         col_count  : Số cột đọc được từ CSV.
@@ -137,6 +285,7 @@ class UploadResponse(BaseModel):
     """
 
     status: str = Field(default="ok")
+    upload_id: UUID = Field(..., description="UUID của upload đã lưu")
     filename: str = Field(..., description="Tên file đã upload")
     row_count: int = Field(..., description="Số hàng trong CSV")
     col_count: int = Field(..., description="Số cột trong CSV")

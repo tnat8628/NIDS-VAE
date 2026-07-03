@@ -7,6 +7,7 @@ Cấu hình tập trung cho backend FastAPI NIDS VAE.
 Tất cả path đều được xây dựng tương đối từ project root để dễ di chuyển.
 """
 
+import os
 from pathlib import Path
 
 # ── Gốc project ──────────────────────────────────────────────────────────────
@@ -20,6 +21,13 @@ PROJECT_ROOT: Path = Path(__file__).resolve().parents[2]
 # ── Thư mục artifact chính ───────────────────────────────────────────────────
 ARTIFACTS_DIR: Path = PROJECT_ROOT / "artifacts"
 DATA_DIR: Path = PROJECT_ROOT / "data"
+
+# PostgreSQL connection used by SQLAlchemy and Alembic.
+# Docker Compose overrides this default with hostname "db".
+DATABASE_URL: str = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg://nids_vae:nids_vae_dev@localhost:5432/nids_vae",
+)
 
 # ── Đường dẫn Model ──────────────────────────────────────────────────────────
 # File checkpoint PyTorch tốt nhất từ quá trình huấn luyện
@@ -68,5 +76,4 @@ SAMPLE_BATCH_PATH: Path = ARTIFACTS_DIR / "sample_batch" / "fixed_batch.csv"
 #
 # QUAN TRỌNG: Chỉ bật khi phát triển/debug — tắt trước khi deploy production
 # vì mỗi request sẽ ghi thêm ~30 dòng log.
-import os as _os
-DEBUG_INFERENCE: bool = _os.getenv("DEBUG_INFERENCE", "false").lower() in ("1", "true", "yes")
+DEBUG_INFERENCE: bool = os.getenv("DEBUG_INFERENCE", "false").lower() in ("1", "true", "yes")

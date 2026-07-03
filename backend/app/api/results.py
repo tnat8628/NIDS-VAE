@@ -12,10 +12,22 @@ Không có persistence qua khởi động lại server.
 """
 
 import logging
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
-from backend.app.schemas.response_schema import ErrorResponse, PredictionResponse
+from backend.app.db.database import get_db
+from backend.app.schemas.response_schema import (
+    ErrorResponse,
+    PaginatedPredictionResponse,
+    PredictionResponse,
+)
+from backend.app.services.prediction_storage import (
+    PredictionRunNotFoundError,
+    UploadNotFoundError,
+    get_paginated_results,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +51,44 @@ def store_latest_result(result: PredictionResponse) -> None:
     global _latest_result
     _latest_result = result
     logger.debug("Đã cache kết quả: %d flows", result.summary.total_flows)
+
+
+@router.get(
+    "/uploads/{upload_id}/results",
+    response_model=PaginatedPredictionResponse,
+    summary="Lấy kết quả prediction phân trang từ PostgreSQL",
+    description=(
+        "Trả một trang flow_predictions cùng summary, histogram và top anomalies "
+        "được tính từ toàn bộ inference run."
+    ),
+    responses={
+        200: {"description": "Trang kết quả prediction"},
+        404: {"model": ErrorResponse, "description": "Upload/run không tồn tại"},
+    },
+)
+def get_upload_results(
+    upload_id: UUID,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
+    inference_run_id: UUID | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> PaginatedPredictionResponse:
+    """Read one bounded database page, never the complete result list."""
+    try:
+        result = get_paginated_results(
+            db,
+            upload_id=upload_id,
+            page=page,
+            page_size=page_size,
+            inference_run_id=inference_run_id,
+        )
+    except (UploadNotFoundError, PredictionRunNotFoundError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    return PaginatedPredictionResponse.model_validate(result)
 
 
 # ── GET /results ──────────────────────────────────────────────────────────────

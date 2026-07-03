@@ -4,8 +4,7 @@ import { toast } from "sonner";
 import { CheckCircle2, FileText, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { Topbar } from "@/components/common/topbar";
 import { FileUploadDropzone } from "@/components/upload/file-upload-dropzone";
-import { predictCsv } from "@/lib/api";
-import { buildDashboardViewModel, savePredictionToStorage } from "@/lib/mapper";
+import { predictUpload, uploadCsv } from "@/lib/api";
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -16,26 +15,22 @@ export default function UploadPage() {
   const navigate = useNavigate();
 
   /**
-   * Gui file CSV len POST /predict, tao view model nhe, roi chuyen den trang ket qua.
-   * Khong day raw response.results vao route state vi file lon co the lam Chrome het bo nho.
+   * Lưu CSV trước, chạy prediction theo upload_id, rồi điều hướng bằng URL bền vững.
    */
   async function handleAnalyze() {
     if (!file) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await predictCsv(file);
-      // Tao view model nhe ngay lap tuc: summary + histogram + top alerts + preview rows.
-      const predictionView = buildDashboardViewModel(response);
-
-      // localStorage chi nhan cache da cat gioi han, khong stringify toan bo results.
-      savePredictionToStorage(response);
+      const upload = await uploadCsv(file);
+      const response = await predictUpload(upload.upload_id);
       toast.success("Phân tích hoàn thành", {
         description: `Phát hiện ${response.summary?.anomaly_count ?? 0} bất thường trong ${response.summary?.total_flows ?? 0} luồng`,
       });
 
-      // Navigation state cung chi giu ban gon nhe de ResultsPage khong giu payload lon trong RAM.
-      navigate("/results", { state: { predictionView } });
+      navigate(
+        `/results?uploadId=${encodeURIComponent(upload.upload_id)}&runId=${encodeURIComponent(response.inference_run_id)}`,
+      );
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??

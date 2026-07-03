@@ -24,22 +24,22 @@
     "free_bits_lambda": 0.05
   },
   "results": {
-    "best_epoch": 58,
-    "final_epoch": 68,
+    "best_epoch": 34,
+    "final_epoch": 44,
     "stopped_early": true,
-    "best_val_loss": 0.7408559779928188,
-    "best_val_recon": 0.6354186113434609,
-    "best_val_kl": 0.1054373685684469,
+    "best_val_loss": 0.7642859395104226,
+    "best_val_recon": 0.6476189385760914,
+    "best_val_kl": 0.11666699811214148,
     "n_params": 36834,
     "n_train_samples": 402229,
     "n_val_samples": 100558
   },
   "device": "cpu",
-  "total_time_seconds": 828.35,
+  "total_time_seconds": 404.9,
   "artifacts": {
-    "checkpoint": "D:\\nids-vae-project\\artifacts\\models\\vae_best.pth",
-    "model_config": "D:\\nids-vae-project\\artifacts\\models\\model_config.json",
-    "history": "D:\\nids-vae-project\\artifacts\\models\\training_history.json",
-    "summary": "D:\\nids-vae-project\\artifacts\\models\\training_summary.json"
+    "checkpoint": "D:\\NIDS-VAE-PROJECT\\artifacts\\models\\vae_best.pth",
+    "model_config": "D:\\NIDS-VAE-PROJECT\\artifacts\\models\\model_config.json",
+    "history": "D:\\NIDS-VAE-PROJECT\\artifacts\\models\\training_history.json",
+    "summary": "D:\\NIDS-VAE-PROJECT\\artifacts\\models\\training_summary.json"
   }
 }

@@ -2,11 +2,15 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { MappedSummary } from "@/lib/mapper";
 
 interface AnomalyDonutProps {
-  /** Tóm tắt từ lần dự đoán VAE mới nhất trong localStorage. */
+  /** Tóm tắt classification của phạm vi đang hiển thị. */
   summary: MappedSummary;
+  subtitle?: string;
 }
 
-export function AnomalyDonut({ summary }: AnomalyDonutProps) {
+export function AnomalyDonut({
+  summary,
+  subtitle = "Batch phân tích hiện tại",
+}: AnomalyDonutProps) {
   // Dựng dữ liệu biểu đồ từ kết quả thật, không dùng số liệu mock.
   const data = [
     { name: "Bình thường", value: summary.normalCount, fill: "var(--cyan)" },
@@ -16,7 +20,7 @@ export function AnomalyDonut({ summary }: AnomalyDonutProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-soft h-full">
       <h3 className="text-sm font-semibold tracking-tight">Phân loại luồng</h3>
-      <p className="text-xs text-muted-foreground">Batch phân tích hiện tại</p>
+      <p className="text-xs text-muted-foreground">{subtitle}</p>
       <div className="h-[220px] relative">
         <ResponsiveContainer>
           <PieChart>

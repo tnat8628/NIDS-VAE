@@ -16,9 +16,12 @@ Quy trình:
 
 import io
 import logging
+import os
+from uuid import UUID
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from sqlalchemy.orm import Session
 
 from backend.app.core.inference import (
     ArtifactLoadError,
@@ -33,10 +36,17 @@ from backend.app.schemas.response_schema import (
     ErrorResponse,
     FlowPrediction,
     PredictionResponse,
+    PredictionRunResponse,
     PredictionSummary,
 )
 from backend.app.core.debug_inference import debug_single_sample_flow
-import os
+from backend.app.db.database import get_db
+from backend.app.services.prediction_storage import (
+    PredictionStorageError,
+    UploadNotFoundError,
+    load_upload_dataframe,
+    save_prediction_run,
+)
 # Import hàm lưu kết quả vào cache để GET /results có thể fetch lại
 # Import muộn để tránh circular imports (results.py không import predict.py)
 from backend.app.api import results as results_module
@@ -218,3 +228,97 @@ async def predict(
     )
 
     return response
+
+
+@router.post(
+    "/uploads/{upload_id}/predict",
+    response_model=PredictionRunResponse,
+    summary="Chạy VAE cho một CSV upload đã lưu",
+    description=(
+        "Đọc csv_rows từ PostgreSQL, chạy pipeline VAE hiện có, rồi lưu "
+        "atomically inference_run và toàn bộ flow_predictions."
+    ),
+    responses={
+        200: {"description": "Prediction đã được lưu vào PostgreSQL"},
+        404: {"model": ErrorResponse, "description": "Upload không tồn tại"},
+        503: {"model": ErrorResponse, "description": "Không thể lưu prediction"},
+    },
+)
+def predict_persisted_upload(
+    upload_id: UUID,
+    db: Session = Depends(get_db),
+) -> PredictionRunResponse:
+    """Run and persist VAE inference for an existing upload ID."""
+    svc = get_inference_service()
+
+    try:
+        persisted = load_upload_dataframe(db, upload_id)
+    except UploadNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except PredictionStorageError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    # Kết thúc read transaction trước khi chạy model. Transaction ghi phía
+    # dưới chỉ bao quanh inference_run và toàn bộ flow_predictions.
+    db.rollback()
+
+    if os.getenv("DEBUG_INFERENCE", "false").lower() == "true":
+        debug_single_sample_flow(svc, persisted.dataframe)
+
+    try:
+        raw_result = svc.predict_dataframe(persisted.dataframe)
+    except PreprocessingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Lỗi tiền xử lý dữ liệu: {exc}",
+        ) from exc
+    except (InferenceError, ModelDimensionError, ThresholdingError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi suy diễn: {exc}",
+        ) from exc
+
+    try:
+        inference_run_id = save_prediction_run(
+            db,
+            upload_id=upload_id,
+            row_ids=persisted.row_ids,
+            raw_result=raw_result,
+        )
+    except PredictionStorageError as exc:
+        logger.exception("Không thể lưu prediction cho upload '%s'", upload_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Không thể lưu kết quả prediction vào database. "
+                "Không có inference run dở dang được tạo."
+            ),
+        ) from exc
+
+    summary = PredictionSummary(
+        total_flows=raw_result["total_flows"],
+        anomaly_count=raw_result["anomaly_count"],
+        normal_count=raw_result["normal_count"],
+        anomaly_rate=raw_result["anomaly_rate"],
+        threshold=raw_result["threshold"],
+    )
+    results_url = f"/uploads/{upload_id}/results?inference_run_id={inference_run_id}"
+    logger.info(
+        "Đã lưu inference run '%s' cho upload '%s': %d flows",
+        inference_run_id,
+        upload_id,
+        summary.total_flows,
+    )
+    return PredictionRunResponse(
+        status="ok",
+        upload_id=upload_id,
+        inference_run_id=inference_run_id,
+        summary=summary,
+        results_url=results_url,
+    )

@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 import type { MappedFlow } from "@/lib/mapper";
+import type { PaginationResponse } from "@/types/api";
 
 interface FlowTableProps {
-  /** Danh sach flow da duoc cat gioi han thanh preview nhe RAM. */
   flows: MappedFlow[];
-  /** Bao hieu bang chi dang hien thi ban xem truoc. */
-  isPreview?: boolean;
-  /** Tong so flow goc tu backend, dung de hien thi canh bao preview. */
-  totalRows?: number;
+  pagination: PaginationResponse;
+  loading?: boolean;
+  onPageChange: (page: number) => void;
 }
 
 const sevTone: Record<string, string> = {
@@ -25,14 +24,18 @@ const sevLabel: Record<string, string> = {
   low: "thấp",
 };
 
-export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProps) {
+export function FlowTable({
+  flows,
+  pagination,
+  loading = false,
+  onPageChange,
+}: FlowTableProps) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "anomaly" | "normal">("all");
   const [sort, setSort] = useState<"err-desc" | "err-asc" | "idx">("err-desc");
-  const [page, setPage] = useState(0);
-  const pageSize = 25;
 
-  // Chi loc/sap xep tren mang preview nho; khong bao gio xu ly hang trieu row trong component.
+  // Các thao tác này chỉ thay đổi thứ tự/hiển thị trong trang hiện tại.
+  // Chuyển trang luôn gọi backend qua onPageChange.
   const filtered = useMemo(() => {
     let nextFlows = flows;
     if (filter === "anomaly") nextFlows = nextFlows.filter((flow) => flow.prediction === 1);
@@ -43,8 +46,12 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
     return [...nextFlows].sort((a, b) => a.rowIndex - b.rowIndex);
   }, [q, filter, sort, flows]);
 
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const view = filtered.slice(page * pageSize, page * pageSize + pageSize);
+  const firstItem =
+    pagination.total_items === 0 ? 0 : (pagination.page - 1) * pagination.page_size + 1;
+  const lastItem = Math.min(
+    pagination.total_items,
+    pagination.page * pagination.page_size,
+  );
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-soft">
@@ -53,8 +60,8 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
             value={q}
-            onChange={(event) => { setQ(event.target.value); setPage(0); }}
-            placeholder="Tìm theo chỉ số hàng..."
+            onChange={(event) => setQ(event.target.value)}
+            placeholder="Tìm theo chỉ số hàng trong trang..."
             className="bg-transparent outline-none flex-1 text-sm"
           />
         </div>
@@ -62,7 +69,7 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
           {(["all", "anomaly", "normal"] as const).map((nextFilter) => (
             <button
               key={nextFilter}
-              onClick={() => { setFilter(nextFilter); setPage(0); }}
+              onClick={() => setFilter(nextFilter)}
               className={`px-3 h-9 capitalize transition ${filter === nextFilter ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
             >
               {nextFilter === "all" ? "Tất cả" : nextFilter === "anomaly" ? "Bất thường" : "Bình thường"}
@@ -81,7 +88,6 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
         <button
           className="h-9 px-3 rounded-lg border border-border bg-muted/40 hover:bg-muted text-xs flex items-center gap-1.5"
           onClick={() => {
-            // Chi xuat CSV tu preview/bo loc hien tai de khong tao Blob khong lo trong trinh duyet.
             const header = "row_index,reconstruction_error,prediction,prediction_label,severity";
             const rows = filtered.map((flow) =>
               `${flow.rowIndex},${flow.reconstructionError},${flow.prediction},${flow.predictionLabel},${flow.severity}`
@@ -90,7 +96,7 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement("a");
             anchor.href = url;
-            anchor.download = "nids_results_preview.csv";
+            anchor.download = `nids_results_page_${pagination.page}.csv`;
             anchor.click();
             URL.revokeObjectURL(url);
           }}
@@ -111,7 +117,7 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
             </tr>
           </thead>
           <tbody>
-            {view.map((flow) => (
+            {filtered.map((flow) => (
               <tr key={flow.rowIndex} className="border-t border-border hover:bg-muted/30">
                 <td className="py-2 px-4 font-mono text-xs text-muted-foreground">{flow.rowIndex}</td>
                 <td className={`py-2 px-3 font-mono text-xs ${flow.prediction === 1 ? "text-anomaly" : "text-muted-foreground"}`}>
@@ -136,19 +142,24 @@ export function FlowTable({ flows, isPreview = false, totalRows }: FlowTableProp
 
       <div className="flex items-center justify-between p-3 px-4 border-t border-border text-xs text-muted-foreground">
         <div>
-          {isPreview && (
-            <p className="mb-1 text-warning">
-              Đang hiển thị bản xem trước {flows.length} / {totalRows ?? flows.length} flow.
-            </p>
-          )}
-          Hiển thị {filtered.length === 0 ? 0 : page * pageSize + 1}-{Math.min(filtered.length, (page + 1) * pageSize)} trong số {filtered.length}
+          Hiển thị {firstItem}-{lastItem} trong số {pagination.total_items}
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setPage((current) => Math.max(0, current - 1))} className="h-7 w-7 grid place-items-center rounded-md border border-border hover:bg-muted disabled:opacity-40" disabled={page === 0}>
+          <button
+            onClick={() => onPageChange(pagination.page - 1)}
+            className="h-7 w-7 grid place-items-center rounded-md border border-border hover:bg-muted disabled:opacity-40"
+            disabled={loading || !pagination.has_previous}
+          >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <span className="px-2 font-mono">{page + 1} / {pages}</span>
-          <button onClick={() => setPage((current) => Math.min(pages - 1, current + 1))} className="h-7 w-7 grid place-items-center rounded-md border border-border hover:bg-muted disabled:opacity-40" disabled={page >= pages - 1}>
+          <span className="px-2 font-mono">
+            {pagination.page} / {Math.max(1, pagination.total_pages)}
+          </span>
+          <button
+            onClick={() => onPageChange(pagination.page + 1)}
+            className="h-7 w-7 grid place-items-center rounded-md border border-border hover:bg-muted disabled:opacity-40"
+            disabled={loading || !pagination.has_next}
+          >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>

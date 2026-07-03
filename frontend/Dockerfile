@@ -9,7 +9,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend/index.html ./
-COPY frontend/postcss.config.js ./
+COPY frontend/postcss.config.cjs ./
 COPY frontend/tailwind.config.ts ./
 COPY frontend/tsconfig.json ./
 COPY frontend/tsconfig.node.json ./

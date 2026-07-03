@@ -2,8 +2,9 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Upload,
+  Files,
+  ListFilter,
   ListChecks,
-  BarChart3,
   ShieldCheck,
   Settings,
 } from "lucide-react";
@@ -11,14 +12,13 @@ import {
 const nav = [
   { label: "Tổng quan", to: "/dashboard", icon: LayoutDashboard },
   { label: "Tải lên & Phân tích", to: "/upload", icon: Upload },
+  { label: "Quản lý CSV", to: "/uploads", icon: Files },
+  { label: "Luồng toàn hệ thống", to: "/flows", icon: ListFilter },
   { label: "Kết quả", to: "/results", icon: ListChecks },
-  // { label: "Trạng thái hệ thống", to: "/health", icon: Activity },
-  { label: "Phân tích", to: "/analytics", icon: BarChart3 },
-  // { label: "Quản lý mô hình", to: "/models", icon: Cpu },
 ] as const;
 
 export function AppSidebar() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
 
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
@@ -43,16 +43,19 @@ export function AppSidebar() {
             (item.to !== "/dashboard" && pathname.startsWith(item.to));
 
           const Icon = item.icon;
+          const destination =
+            item.to === "/results" && pathname === "/results" && search
+              ? `/results${search}`
+              : item.to;
 
           return (
             <Link
               key={item.to}
-              to={item.to}
-              className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
-                active
+              to={destination}
+              className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-soft"
                   : "text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
-              }`}
+                }`}
             >
               {active && (
                 <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-primary" />

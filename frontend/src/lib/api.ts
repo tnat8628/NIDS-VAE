@@ -1,9 +1,17 @@
 import axios from 'axios'
 import { API_BASE_URL } from '@/config/env'
 import type {
+  DashboardOverviewResponse,
+  DeleteUploadResponse,
+  GlobalFlowListResponse,
+  GlobalPredictionFilter,
   HealthResponse,
+  PaginatedPredictionResponse,
+  UploadFilter,
+  UploadListResponse,
   UploadResponse,
   PredictionResponse,
+  PredictionRunResponse,
 } from '@/types/api'
 
 /**
@@ -65,6 +73,74 @@ export async function predictCsv(file: File): Promise<PredictionResponse> {
   const { data } = await apiClient.post<PredictionResponse>('/predict', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+  return data
+}
+
+/** Aggregate toàn hệ thống, độc lập với upload/run đang mở ở ResultsPage. */
+export async function getDashboardOverview(): Promise<DashboardOverviewResponse> {
+  const { data } = await apiClient.get<DashboardOverviewResponse>('/dashboard/overview')
+  return data
+}
+
+/** Danh sÃ¡ch CSV upload cÃ³ phÃ¢n trang vÃ  filter tá»« PostgreSQL. */
+export async function getUploads(
+  page = 1,
+  pageSize = 20,
+  filter: UploadFilter = 'all',
+): Promise<UploadListResponse> {
+  const { data } = await apiClient.get<UploadListResponse>('/uploads', {
+    params: { page, page_size: pageSize, filter },
+  })
+  return data
+}
+
+/** XÃ³a má»™t upload vÃ  toÃ n bá»™ rows/runs/predictions liÃªn quan. */
+export async function deleteUpload(uploadId: string): Promise<DeleteUploadResponse> {
+  const { data } = await apiClient.delete<DeleteUploadResponse>(
+    `/uploads/${encodeURIComponent(uploadId)}`,
+  )
+  return data
+}
+
+/** Flow explorer toÃ n há»‡ thá»‘ng, chá»‰ láº¥y latest run cá»§a má»—i upload. */
+export async function getDashboardFlows(
+  page = 1,
+  pageSize = 25,
+  prediction: GlobalPredictionFilter = 'all',
+): Promise<GlobalFlowListResponse> {
+  const { data } = await apiClient.get<GlobalFlowListResponse>('/dashboard/flows', {
+    params: { page, page_size: pageSize, prediction },
+  })
+  return data
+}
+
+/** Chạy inference cho upload đã lưu; response không chứa mảng flow khổng lồ. */
+export async function predictUpload(uploadId: string): Promise<PredictionRunResponse> {
+  const { data } = await apiClient.post<PredictionRunResponse>(
+    `/uploads/${encodeURIComponent(uploadId)}/predict`,
+    undefined,
+    { timeout: 300_000 },
+  )
+  return data
+}
+
+/** Lấy đúng một trang results từ PostgreSQL. */
+export async function getUploadResults(
+  uploadId: string,
+  page = 1,
+  pageSize = 25,
+  inferenceRunId?: string,
+): Promise<PaginatedPredictionResponse> {
+  const { data } = await apiClient.get<PaginatedPredictionResponse>(
+    `/uploads/${encodeURIComponent(uploadId)}/results`,
+    {
+      params: {
+        page,
+        page_size: pageSize,
+        ...(inferenceRunId ? { inference_run_id: inferenceRunId } : {}),
+      },
+    },
+  )
   return data
 }
 

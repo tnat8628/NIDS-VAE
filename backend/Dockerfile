@@ -13,6 +13,10 @@ RUN apt-get update \
 COPY backend/requirements.runtime.txt /app/backend/requirements.runtime.txt
 
 RUN python -m pip install --upgrade pip \
+    && python -m pip install \
+        --no-deps \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch==2.12.0 \
     && python -m pip install -r /app/backend/requirements.runtime.txt
 
 RUN mkdir -p \
@@ -24,6 +28,8 @@ RUN mkdir -p \
     /app/artifacts/sample_batch
 
 COPY backend/app /app/backend/app
+COPY backend/alembic.ini /app/backend/alembic.ini
+COPY backend/alembic /app/backend/alembic
 
 COPY artifacts/models/vae_best.pth /app/artifacts/models/vae_best.pth
 COPY artifacts/models/model_config.json /app/artifacts/models/model_config.json
@@ -38,4 +44,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()" || exit 1
 
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "alembic -c backend/alembic.ini upgrade head && exec uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"]

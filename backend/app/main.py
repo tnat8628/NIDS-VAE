@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse
 from backend.app.api import predict as predict_module
 from backend.app.api import results as results_module
 from backend.app.api import upload as upload_module
+from backend.app.api import dashboard as dashboard_module
 from backend.app.schemas.response_schema import ErrorResponse, HealthResponse
 
 # ── Cấu hình logging ──────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ app.add_middleware(
 app.include_router(predict_module.router, tags=["Prediction"])
 app.include_router(upload_module.router, tags=["Upload"])
 app.include_router(results_module.router, tags=["Results"])
+app.include_router(dashboard_module.router, tags=["Dashboard"])
 
 
 # ── Custom exception handler: chuẩn hóa lỗi theo ErrorResponse schema ────────
@@ -146,7 +148,13 @@ def root():
         "endpoints": {
             "health": "GET /health",
             "predict": "POST /predict",
+            "predict_upload": "POST /uploads/{upload_id}/predict",
             "upload": "POST /upload",
+            "uploads": "GET /uploads?page=1&page_size=20&filter=all",
+            "delete_upload": "DELETE /uploads/{upload_id}",
             "results": "GET /results",
+            "upload_results": "GET /uploads/{upload_id}/results?page=1&page_size=25",
+            "dashboard_overview": "GET /dashboard/overview",
+            "dashboard_flows": "GET /dashboard/flows?page=1&page_size=25&prediction=all",
         },
     }

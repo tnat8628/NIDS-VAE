@@ -1,4 +1,4 @@
-import { Bell, Search, ShieldAlert } from "lucide-react";
+import { Bell, ShieldAlert } from "lucide-react";
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
@@ -10,11 +10,6 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 px-3 h-9 w-72 rounded-lg border border-border bg-muted/40 text-sm text-muted-foreground">
-            <Search className="h-4 w-4" />
-            <span>Tìm luồng, IP, cảnh báo…</span>
-            <kbd className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-background border border-border">⌘K</kbd>
-          </div>
           <button className="relative h-9 w-9 grid place-items-center rounded-lg border border-border bg-muted/40 hover:bg-muted transition">
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-anomaly" />

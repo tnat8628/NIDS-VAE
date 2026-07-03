@@ -3,7 +3,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import type { MappedFlow } from "@/lib/mapper";
 
 interface ActivityTimelineProps {
-  /** Preview flow đã được mapper giới hạn để biểu đồ không xử lý payload lớn. */
+  /** Các flow thuộc trang database hiện tại. */
   flows: MappedFlow[];
 }
 

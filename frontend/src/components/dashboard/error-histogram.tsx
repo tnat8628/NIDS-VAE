@@ -11,23 +11,29 @@ import {
 import type { HistogramBin } from "@/lib/mapper";
 
 interface ErrorHistogramProps {
-  /** Dữ liệu histogram đã tính từ mapper.computeHistogram() */
+  /** Histogram aggregate được backend tính từ toàn bộ inference run. */
   histogram: HistogramBin[];
   /** Ngưỡng phân biệt bình thường/bất thường */
-  threshold: number;
+  threshold?: number;
 }
 
 export function ErrorHistogram({ histogram, threshold }: ErrorHistogramProps) {
   // Tìm bin gần nhất với ngưỡng để vẽ đường tham chiếu
   const thresholdBin =
-    histogram[Math.max(0, histogram.findIndex((b) => Number(b.bin) >= threshold))]?.bin;
+    threshold === undefined
+      ? undefined
+      : histogram[Math.max(0, histogram.findIndex((b) => Number(b.bin) >= threshold))]?.bin;
 
   return (
     <div className="w-full min-w-0 rounded-xl border border-border bg-card p-5 shadow-soft">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold tracking-tight">Phân bố lỗi tái tạo</h3>
-          <p className="text-xs text-muted-foreground">Lỗi tái tạo theo từng luồng từ VAE · ngưỡng {threshold.toFixed(4)}</p>
+          <p className="text-xs text-muted-foreground">
+            {threshold === undefined
+              ? "Tổng hợp từ latest inference run của mỗi file"
+              : `Lỗi tái tạo theo từng luồng từ VAE · ngưỡng ${threshold.toFixed(4)}`}
+          </p>
         </div>
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-cyan" /> Bình thường</span>

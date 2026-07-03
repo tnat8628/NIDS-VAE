@@ -108,8 +108,11 @@ Huấn luyện trên CICIDS2017 (train: 402,229 flows BENIGN):
 | Method | Endpoint | Mô tả |
 |---|---|---|
 | GET | `/health` | Kiểm tra trạng thái service |
-| POST | `/upload` | Upload CSV, validate format |
+| POST | `/upload` | Validate CSV và lưu toàn bộ dữ liệu vào PostgreSQL |
 | POST | `/predict` | Chạy phát hiện anomaly, trả kết quả |
+| POST | `/uploads/{upload_id}/predict` | Chạy VAE từ CSV đã lưu và persist toàn bộ predictions |
+| GET | `/uploads/{upload_id}/results` | Đọc kết quả từ PostgreSQL theo `page`/`page_size` |
+| GET | `/dashboard/overview` | Tổng hợp toàn hệ thống từ run mới nhất của từng upload |
 | GET | `/results` | Lấy kết quả predict gần nhất |
 
 Tài liệu API đầy đủ: [docs/api-spec.md](docs/api-spec.md)
@@ -134,6 +137,7 @@ Chế độ Docker dùng cho production/local demo:
 
 - Backend FastAPI chạy bằng Uvicorn trên port `8000`.
 - Frontend React/Vite được build static và serve bằng Nginx trên port `5173`.
+- PostgreSQL 16 lưu bền vững metadata và từng dòng của `POST /upload`.
 - Docker image không copy `data/`, `notebooks/`, `reports/`, `venv/`, `frontend/node_modules/`, `frontend/dist/` hoặc `__pycache__/`.
 
 ### Yêu Cầu Artifact Runtime
@@ -161,8 +165,13 @@ python scripts/check_runtime_artifacts.py
 ### Khởi Động
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
+
+Backend tự chạy `alembic -c backend/alembic.ini upgrade head` trước khi khởi động
+Uvicorn. Dữ liệu PostgreSQL nằm trong named volume `postgres_data`, nên không mất
+khi restart container. Chỉ `docker compose down -v` mới xóa volume này.
 
 Frontend sẽ gọi backend qua `VITE_API_BASE_URL`. Mặc định trong Docker Compose là:
 
@@ -192,5 +201,38 @@ Sau khi container khởi động:
 Kiểm tra nhanh bằng sample CSV:
 
 ```bash
+curl -F "file=@artifacts/sample_batch/fixed_batch.csv" http://localhost:8000/upload
 curl -F "file=@artifacts/sample_batch/fixed_batch.csv" http://localhost:8000/predict
+```
+
+Flow database-backed dùng cho frontend:
+
+```text
+POST /upload
+  -> upload_id
+POST /uploads/{upload_id}/predict
+  -> inference_run_id + summary
+GET /uploads/{upload_id}/results?page=1&page_size=25
+  -> summary + 25 items + pagination + aggregates
+GET /dashboard/overview
+  -> tổng số upload/flow + độ phủ phân tích + phân loại + histogram toàn hệ thống
+```
+
+`ResultsPage` chỉ giữ các item của trang hiện tại. Histogram và top anomalies
+được tính từ toàn bộ `flow_predictions` trong PostgreSQL; danh sách prediction
+đầy đủ không được gửi về browser hoặc lưu trong localStorage.
+
+Hai trang có nguồn dữ liệu độc lập:
+
+- **Kết quả** chỉ đọc đúng `uploadId` và `runId` trên URL
+  `/results?uploadId=...&runId=...`; không tự lấy batch gần nhất.
+- **Tổng quan** chỉ gọi `GET /dashboard/overview`. Mỗi upload đã phân tích chỉ
+  đóng góp run mới nhất, nên rerun không làm cộng trùng. Upload chưa chạy VAE
+  vẫn được tính vào tổng upload/flow và hiển thị trong độ phủ phân tích.
+
+Kiểm tra nhanh số upload và số dòng đã lưu:
+
+```bash
+docker compose exec db psql -U nids_vae -d nids_vae -c "SELECT COUNT(*) AS uploads FROM csv_uploads;"
+docker compose exec db psql -U nids_vae -d nids_vae -c "SELECT COUNT(*) AS rows FROM csv_rows;"
 ```

@@ -1,6 +1,23 @@
 name: nids-vae
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: nids-vae-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nids_vae}
+      POSTGRES_USER: ${POSTGRES_USER:-nids_vae}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nids_vae_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nids-network
+
   backend:
     build:
       context: .
@@ -8,8 +25,12 @@ services:
     image: nids-vae-backend:local
     container_name: nids-vae-backend
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://nids_vae:nids_vae_dev@db:5432/nids_vae}
       DEBUG_INFERENCE: "false"
       PYTHONUNBUFFERED: "1"
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
     healthcheck:
@@ -46,3 +67,6 @@ services:
 networks:
   nids-network:
     driver: bridge
+
+volumes:
+  postgres_data:
