@@ -67,6 +67,8 @@ export type Severity = 'low' | 'medium' | 'high' | 'critical'
 
 export interface StoredFlowPrediction extends FlowPrediction {
   severity: Severity
+  actual_label: string | number | boolean | null
+  actual_binary: 0 | 1 | null
 }
 
 export interface PaginationResponse {

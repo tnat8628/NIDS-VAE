@@ -18,6 +18,8 @@ export interface MappedFlow {
   reconstructionError: number
   prediction: 0 | 1
   predictionLabel: 'normal' | 'anomaly'
+  actualLabel: string | number | boolean | null
+  actualBinary: 0 | 1 | null
   severity: Severity
 }
 
@@ -48,6 +50,8 @@ function mapFlow(flow: StoredFlowPrediction): MappedFlow {
     reconstructionError: flow.reconstruction_error,
     prediction: flow.prediction,
     predictionLabel: flow.prediction_label,
+    actualLabel: flow.actual_label,
+    actualBinary: flow.actual_binary,
     severity: flow.severity,
   }
 }

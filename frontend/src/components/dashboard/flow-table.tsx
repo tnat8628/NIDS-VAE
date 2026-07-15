@@ -1,9 +1,23 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
+import {
+  downloadUploadResultsCsv,
+  type ResultsCsvPredictionFilter,
+  type ResultsCsvSort,
+} from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { MappedFlow } from "@/lib/mapper";
 import type { PaginationResponse } from "@/types/api";
 
 interface FlowTableProps {
+  uploadId: string;
+  inferenceRunId: string;
   flows: MappedFlow[];
   pagination: PaginationResponse;
   loading?: boolean;
@@ -24,7 +38,24 @@ const sevLabel: Record<string, string> = {
   low: "thấp",
 };
 
+function formatActualLabel(flow: MappedFlow): string {
+  if (flow.actualLabel !== null && flow.actualLabel !== undefined && String(flow.actualLabel).trim() !== "") {
+    return String(flow.actualLabel);
+  }
+  if (flow.actualBinary === 0) return "Bình thường";
+  if (flow.actualBinary === 1) return "Tấn công";
+  return "N/A";
+}
+
+function actualLabelTone(flow: MappedFlow): string {
+  if (flow.actualBinary === 0) return "text-cyan bg-cyan/10 border-cyan/30";
+  if (flow.actualBinary === 1) return "text-anomaly bg-anomaly/10 border-anomaly/30";
+  return "text-muted-foreground bg-muted/30 border-border";
+}
+
 export function FlowTable({
+  uploadId,
+  inferenceRunId,
   flows,
   pagination,
   loading = false,
@@ -33,6 +64,7 @@ export function FlowTable({
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "anomaly" | "normal">("all");
   const [sort, setSort] = useState<"err-desc" | "err-asc" | "idx">("err-desc");
+  const [exporting, setExporting] = useState(false);
 
   // Các thao tác này chỉ thay đổi thứ tự/hiển thị trong trang hiện tại.
   // Chuyển trang luôn gọi backend qua onPageChange.
@@ -52,6 +84,31 @@ export function FlowTable({
     pagination.total_items,
     pagination.page * pagination.page_size,
   );
+
+  async function handleExportCsv() {
+    const apiSort: ResultsCsvSort =
+      sort === "err-desc" ? "err_desc" : sort === "err-asc" ? "err_asc" : "idx";
+
+    setExporting(true);
+    try {
+      const { blob, filename } = await downloadUploadResultsCsv(
+        uploadId,
+        inferenceRunId,
+        filter as ResultsCsvPredictionFilter,
+        apiSort,
+      );
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-soft">
@@ -76,30 +133,41 @@ export function FlowTable({
             </button>
           ))}
         </div>
-        <select
+        <Select
           value={sort}
-          onChange={(event) => setSort(event.target.value as typeof sort)}
-          className="h-9 px-3 rounded-lg border border-border bg-muted/40 text-xs outline-none"
+          onValueChange={(value) => setSort(value as typeof sort)}
         >
-          <option value="err-desc">Lỗi ↓</option>
-          <option value="err-asc">Lỗi ↑</option>
-          <option value="idx">Chỉ số hàng</option>
-        </select>
+          <SelectTrigger className="h-9 w-[112px] rounded-lg border-border bg-muted/40 px-3 text-xs text-foreground shadow-none hover:bg-muted focus:ring-1 focus:ring-ring">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent
+            align="end"
+            className="z-[80] border-border bg-popover text-popover-foreground shadow-lg"
+          >
+            <SelectItem
+              value="err-desc"
+              className="text-xs text-foreground focus:bg-muted focus:text-foreground data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            >
+              Lỗi ↓
+            </SelectItem>
+            <SelectItem
+              value="err-asc"
+              className="text-xs text-foreground focus:bg-muted focus:text-foreground data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            >
+              Lỗi ↑
+            </SelectItem>
+            <SelectItem
+              value="idx"
+              className="text-xs text-foreground focus:bg-muted focus:text-foreground data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            >
+              Chỉ số hàng
+            </SelectItem>
+          </SelectContent>
+        </Select>
         <button
-          className="h-9 px-3 rounded-lg border border-border bg-muted/40 hover:bg-muted text-xs flex items-center gap-1.5"
-          onClick={() => {
-            const header = "row_index,reconstruction_error,prediction,prediction_label,severity";
-            const rows = filtered.map((flow) =>
-              `${flow.rowIndex},${flow.reconstructionError},${flow.prediction},${flow.predictionLabel},${flow.severity}`
-            );
-            const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement("a");
-            anchor.href = url;
-            anchor.download = `nids_results_page_${pagination.page}.csv`;
-            anchor.click();
-            URL.revokeObjectURL(url);
-          }}
+          className="h-9 px-3 rounded-lg border border-border bg-muted/40 hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center gap-1.5"
+          disabled={exporting}
+          onClick={handleExportCsv}
         >
           <Download className="h-3.5 w-3.5" /> Xuất CSV
         </button>
@@ -112,7 +180,8 @@ export function FlowTable({
               <th className="text-left font-medium py-2 px-4">Hàng #</th>
               <th className="text-left font-medium py-2 px-3">Lỗi tái tạo</th>
               <th className="text-left font-medium py-2 px-3">Dự đoán</th>
-              <th className="text-left font-medium py-2 px-3">Nhãn</th>
+              <th className="text-left font-medium py-2 px-3">Nhãn dự đoán</th>
+              <th className="text-left font-medium py-2 px-3 min-w-[150px]">Nhãn thực tế</th>
               <th className="text-left font-medium py-2 px-4">Mức độ</th>
             </tr>
           </thead>
@@ -128,6 +197,14 @@ export function FlowTable({
                   <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                     flow.prediction === 1 ? "text-anomaly bg-anomaly/10 border-anomaly/30" : "text-cyan bg-cyan/10 border-cyan/30"
                   }`}>{flow.predictionLabel === "anomaly" ? "Bất thường" : "Bình thường"}</span>
+                </td>
+                <td className="py-2 px-3 min-w-[150px] max-w-[220px]">
+                  <span
+                    title={formatActualLabel(flow)}
+                    className={`inline-block max-w-[200px] truncate align-middle text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${actualLabelTone(flow)}`}
+                  >
+                    {formatActualLabel(flow)}
+                  </span>
                 </td>
                 <td className="py-2 px-4">
                   <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${sevTone[flow.severity]}`}>

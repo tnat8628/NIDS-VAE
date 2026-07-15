@@ -79,7 +79,7 @@ class VAEInferenceService:
     Dịch vụ suy diễn VAE cho phát hiện anomaly trên network flow.
 
     Tải tất cả artifact một lần khi khởi tạo và tái sử dụng cho nhiều
-    lần gọi predict_dataframe(). Thread-safe ở chế độ read-only.
+    lần gọi predict_dataframe(). Thread-safe ở chế độ read-only. 
 
     Attributes:
         model: Mô hình VAE đã tải và ở chế độ eval.

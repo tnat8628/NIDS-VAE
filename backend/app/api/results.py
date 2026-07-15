@@ -14,7 +14,7 @@ Không có persistence qua khởi động lại server.
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from backend.app.db.database import get_db
@@ -26,6 +26,7 @@ from backend.app.schemas.response_schema import (
 from backend.app.services.prediction_storage import (
     PredictionRunNotFoundError,
     UploadNotFoundError,
+    build_results_export_csv,
     get_paginated_results,
 )
 
@@ -89,6 +90,48 @@ def get_upload_results(
         ) from exc
 
     return PaginatedPredictionResponse.model_validate(result)
+
+
+@router.get(
+    "/uploads/{upload_id}/results/export",
+    summary="Xuat toan bo ket qua prediction ra CSV",
+    description=(
+        "Xuat toan bo flow_predictions cua inference run theo filter, "
+        "join voi csv_rows.payload de doi chieu nhan that neu co."
+    ),
+    responses={
+        200: {"description": "File CSV ket qua prediction"},
+        404: {"model": ErrorResponse, "description": "Upload/run khong ton tai"},
+    },
+)
+def export_upload_results(
+    upload_id: UUID,
+    inference_run_id: UUID | None = Query(default=None),
+    prediction: str = Query(default="all", pattern="^(all|anomaly|normal)$"),
+    sort: str = Query(default="idx", pattern="^(idx|err_desc|err_asc)$"),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Export the complete selected result set, never just the current page."""
+    try:
+        csv_bytes = build_results_export_csv(
+            db,
+            upload_id=upload_id,
+            inference_run_id=inference_run_id,
+            prediction=prediction,  # type: ignore[arg-type]
+            sort=sort,  # type: ignore[arg-type]
+        )
+    except (UploadNotFoundError, PredictionRunNotFoundError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    filename = f"nids_results_{upload_id}_{prediction}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ── GET /results ──────────────────────────────────────────────────────────────

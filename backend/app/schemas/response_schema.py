@@ -98,6 +98,8 @@ class StoredFlowPrediction(FlowPrediction):
     """One paginated database-backed prediction row."""
 
     severity: Literal["low", "medium", "high", "critical"]
+    actual_label: str | int | float | bool | None = None
+    actual_binary: Literal[0, 1] | None = None
 
 
 class PaginationResponse(BaseModel):
@@ -173,8 +175,8 @@ class DashboardOverviewResponse(BaseModel):
     histogram: list[HistogramBinResponse]
     classification: DashboardClassification
     latest_activity: DashboardLatestActivity
-    
-    
+
+
 # ── Health response ───────────────────────────────────────────────────────────
 
 class UploadListItemResponse(BaseModel):

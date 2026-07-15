@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # ── Ngoại lệ tùy chỉnh ───────────────────────────────────────────────────────
 
 class ThresholdingError(Exception):
-    """Lỗi liên quan đến tải hoặc áp dụng ngưỡng phân loại."""
+    """Lỗi liên quan đến tải hoặc áp dụng ngưỡng phân loại.""" 
 
 
 class MissingThresholdError(ThresholdingError):

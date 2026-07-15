@@ -14,6 +14,9 @@ import type {
   PredictionRunResponse,
 } from '@/types/api'
 
+export type ResultsCsvPredictionFilter = 'all' | 'anomaly' | 'normal'
+export type ResultsCsvSort = 'idx' | 'err_desc' | 'err_asc'
+
 /**
  * Instance Axios dùng chung cho toàn ứng dụng.
  * Base URL lấy từ biến môi trường VITE_API_BASE_URL,
@@ -142,6 +145,36 @@ export async function getUploadResults(
     },
   )
   return data
+}
+
+/** Tai file CSV day du cua mot inference run theo filter hien tai. */
+export async function downloadUploadResultsCsv(
+  uploadId: string,
+  inferenceRunId: string | undefined,
+  prediction: ResultsCsvPredictionFilter = 'all',
+  sort: ResultsCsvSort = 'idx',
+): Promise<{ blob: Blob; filename: string }> {
+  const response = await apiClient.get<Blob>(
+    `/uploads/${encodeURIComponent(uploadId)}/results/export`,
+    {
+      params: {
+        prediction,
+        sort,
+        ...(inferenceRunId ? { inference_run_id: inferenceRunId } : {}),
+      },
+      responseType: 'blob',
+      timeout: 300_000,
+    },
+  )
+
+  const disposition = response.headers['content-disposition']
+  const match =
+    typeof disposition === 'string'
+      ? disposition.match(/filename="?([^";]+)"?/i)
+      : null
+  const filename = match?.[1] ?? `nids_results_${uploadId}_${prediction}.csv`
+
+  return { blob: response.data, filename }
 }
 
 /** Lấy kết quả dự đoán gần nhất từ server (GET /results) */

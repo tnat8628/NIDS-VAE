@@ -131,6 +131,8 @@ export default function ResultsPage() {
 
         <div className="overflow-hidden">
           <FlowTable
+            uploadId={uploadId!}
+            inferenceRunId={inferenceRunId!}
             flows={prediction.flows}
             pagination={response.pagination}
             loading={loading}

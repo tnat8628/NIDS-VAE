@@ -13,7 +13,7 @@ Quy trình tiền xử lý phải khớp chính xác với quy trình huấn luy
   7. Kiểm tra không còn NaN hoặc Inf
   8. Trả về DataFrame đã làm sạch (chưa scale)
 
-LƯU Ý QUAN TRỌNG:
+LƯU Ý QUAN TRỌNG: 
   - Không fit scaler mới trong backend.
   - Không tính median mới từ input của user.
   - Thứ tự cột đầu vào phải khớp với artifacts/feature_schema/feature_columns.json.
